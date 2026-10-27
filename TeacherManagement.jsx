@@ -484,15 +484,20 @@ export default function TeacherManagement() {
 
   // Filtered Teachers List
   const filteredTeachers = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+
     return teachers.filter(teacher => {
-      const matchesSearch =
-        teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        teacher.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        teacher.subjects.some(sub => sub.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesSearch = !term || (
+        (teacher.name && teacher.name.toLowerCase().includes(term)) ||
+        (teacher.department && teacher.department.toLowerCase().includes(term)) ||
+        (teacher.designation && teacher.designation.toLowerCase().includes(term)) ||
+        (teacher.id && teacher.id.toLowerCase().includes(term)) ||
+        (Array.isArray(teacher.subjects) && teacher.subjects.some(sub => sub.toLowerCase().includes(term)))
+      );
 
       const matchesDept = teacherDeptFilter === 'All' || teacher.department === teacherDeptFilter;
       const matchesDesignation = teacherDesignationFilter === 'All' || teacher.designation === teacherDesignationFilter;
-      const matchesSubject = teacherSubjectFilter === 'All' || teacher.subjects.includes(teacherSubjectFilter);
+      const matchesSubject = teacherSubjectFilter === 'All' || (Array.isArray(teacher.subjects) && teacher.subjects.includes(teacherSubjectFilter));
 
       return matchesSearch && matchesDept && matchesDesignation && matchesSubject;
     });
@@ -500,20 +505,74 @@ export default function TeacherManagement() {
 
   // Filtered Assignments List
   const filteredAssignments = useMemo(() => {
-    return assignments.filter(asn =>
-      asn.program.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      asn.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      asn.questionTypes.some(qt => qt.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (asn.instructions && asn.instructions.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [assignments, searchTerm]);
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return assignments;
+
+    return assignments.filter(asn => {
+      const matchProgram = Boolean(asn.program && asn.program.toLowerCase().includes(term));
+      const matchSubject = Boolean(asn.subject && asn.subject.toLowerCase().includes(term));
+      const matchId = Boolean(asn.id && asn.id.toLowerCase().includes(term));
+      const matchInstructions = Boolean(asn.instructions && asn.instructions.toLowerCase().includes(term));
+      const matchType = Boolean(
+        (asn.type === 'question' && 'specific questions assignment'.includes(term)) ||
+        (asn.type === 'questionType' && 'question type assignment'.includes(term))
+      );
+
+      // Question types (MCQ, Essay, etc.)
+      const matchQuestionTypes = Boolean(
+        Array.isArray(asn.questionTypes) &&
+        asn.questionTypes.some(qt => qt.toLowerCase().includes(term))
+      );
+
+      // Assigned Teachers: match by Name, Department, or ID
+      const assignedIds = asn.teacherIds || (asn.teacherId ? [asn.teacherId] : []);
+      const matchTeachers = assignedIds.some(id => {
+        const t = teachers.find(teacher => teacher.id === id);
+        return t && (
+          t.name.toLowerCase().includes(term) ||
+          t.department.toLowerCase().includes(term) ||
+          t.id.toLowerCase().includes(term)
+        );
+      });
+
+      // Specific Question IDs/titles
+      const matchQuestions = Boolean(
+        Array.isArray(asn.selectedQuestionIds) &&
+        asn.selectedQuestionIds.some(qId => {
+          if (qId.toLowerCase().includes(term)) return true;
+          const qItem = QUESTION_BANK_ITEMS.find(q => q.id === qId);
+          return qItem && (
+            qItem.title.toLowerCase().includes(term) ||
+            qItem.subject.toLowerCase().includes(term) ||
+            qItem.type.toLowerCase().includes(term)
+          );
+        })
+      );
+
+      return (
+        matchProgram ||
+        matchSubject ||
+        matchId ||
+        matchInstructions ||
+        matchType ||
+        matchQuestionTypes ||
+        matchTeachers ||
+        matchQuestions
+      );
+    });
+  }, [assignments, teachers, searchTerm]);
 
   // Filtered Activity Logs
   const filteredLogs = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return activityLogs;
+
     return activityLogs.filter(log =>
-      log.teacherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchTerm.toLowerCase())
+      (log.teacherName && log.teacherName.toLowerCase().includes(term)) ||
+      (log.action && log.action.toLowerCase().includes(term)) ||
+      (log.details && log.details.toLowerCase().includes(term)) ||
+      (log.department && log.department.toLowerCase().includes(term)) ||
+      (log.id && log.id.toLowerCase().includes(term))
     );
   }, [activityLogs, searchTerm]);
 
@@ -803,7 +862,13 @@ export default function TeacherManagement() {
           <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
           <input
             type="text"
-            placeholder={activeTab === 'teachers' ? "Search teachers by name or subject..." : "Search activity logs..."}
+            placeholder={
+              activeTab === 'assignments'
+                ? "Search assignments by course, teacher, or type..."
+                : activeTab === 'teachers'
+                ? "Search teachers by name, department, or subject..."
+                : "Search activity logs..."
+            }
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl pl-10 pr-10 py-2.5 text-sm text-[#1A1A1A] placeholder-stone-400 focus:outline-none focus:border-[#72102A] focus:ring-1 focus:ring-[#72102A] transition-all"
@@ -864,8 +929,18 @@ export default function TeacherManagement() {
           {filteredAssignments.length === 0 ? (
             <div className="py-16 text-center border border-dashed border-stone-300 rounded-3xl bg-white">
               <Icon name="documentText" className="w-8 h-8 text-stone-400 mx-auto mb-3" />
-              <h3 className="text-base font-semibold text-stone-700">No question type assignments found</h3>
-              <p className="text-xs text-stone-500 mt-1">Click "Create New Teacher Assignment" above to add one.</p>
+              <h3 className="text-base font-semibold text-stone-700">No assignments found</h3>
+              <p className="text-xs text-stone-500 mt-1">
+                {searchTerm ? 'No assignments match your search term.' : 'Click "Create New Teacher Assignment" above to add one.'}
+              </p>
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="mt-4 px-4 py-2 rounded-xl bg-[#72102A] text-white text-xs font-semibold hover:bg-[#8B1F3A] transition-all"
+                >
+                  Clear Search
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

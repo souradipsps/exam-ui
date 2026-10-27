@@ -12,6 +12,7 @@ import QuestionDeleteModal from './modals/QuestionDeleteModal.jsx';
 import Icon from './common/Icon.jsx';
 import { INITIAL_QUESTIONS } from '../data/mockQuestions.js';
 import { NAV_ITEMS } from '../data/navigation.js';
+import TeacherManagement from './TeacherManagement.jsx';
 
 export default function QuestionBank() {
   const [questions, setQuestions] = useState(INITIAL_QUESTIONS);
@@ -219,86 +220,86 @@ export default function QuestionBank() {
               </div>
             )}
 
-            {/* ── Page Header: Title & Subtitle ── */}
-            <div>
-              <h1
-                style={{
-                  fontFamily: "'Outfit', 'Inter', system-ui, sans-serif",
-                  fontSize: '22px',
-                  fontWeight: 800,
-                  color: '#111827',
-                  lineHeight: 1.2,
-                  letterSpacing: '-0.02em',
-                  margin: 0,
-                }}
-              >
-                {NAV_ITEMS.find((n) => n.id === activeNav)?.label || 'Question Bank'}
-              </h1>
-              <p
-                style={{
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                  fontSize: '12.5px',
-                  color: '#6B7280',
-                  marginTop: '4px',
-                  marginBottom: 0,
-                }}
-              >
-                All sanctioned questions across subjects and classes
-              </p>
-            </div>
-
-            {/* ── Summary Cards (4 Compact Cards: Questions, Subjects, Types, Last Updated) ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                {
-                  label: 'Questions',
-                  value: questions.length,
-                  color: '#72102a',
-                  onClick: handleResetFilters,
-                  tooltip: 'Total questions in repository (Click to view all)',
-                },
-                {
-                  label: 'Subjects',
-                  value: [...new Set(questions.map((q) => q.subject).filter(Boolean))].length,
-                  color: '#059669',
-                  tooltip: 'Total academic subjects covered',
-                },
-                {
-                  label: 'Question Types',
-                  value: [...new Set(questions.map((q) => q.type).filter(Boolean))].length,
-                  color: '#7a422bff',
-                  tooltip: 'Unique question formats and types',
-                },
-                {
-                  label: 'Last Updated',
-                  value: 'Today',
-                  color: '#0f766e',
-                  tooltip: 'Latest question bank activity recorded',
-                },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  onClick={stat.onClick}
-                  className={`bg-white rounded-xl border border-[#E8E2D9] px-5 py-3.5 transition-all duration-150 shadow-sm flex flex-col justify-center ${stat.onClick ? 'cursor-pointer hover:shadow-md hover:border-[#72102a]/40' : 'hover:shadow'
-                    }`}
-                  title={stat.tooltip}
-                >
-                  <div
-                    className="text-2xl md:text-3xl font-extrabold leading-none mb-1.5 tracking-tight"
-                    style={{ color: stat.color }}
-                  >
-                    {stat.value}
-                  </div>
-                  <div className="text-xs font-semibold text-gray-700">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* View Switcher */}
-            {activeNav === 'questionBank' ? (
+            {/* ── QUESTION BANK VIEW ── */}
+            {activeNav === 'questionBank' && (
               <>
+                {/* ── Page Header: Title & Subtitle ── */}
+                <div>
+                  <h1
+                    style={{
+                      fontFamily: "'Outfit', 'Inter', system-ui, sans-serif",
+                      fontSize: '22px',
+                      fontWeight: 800,
+                      color: '#111827',
+                      lineHeight: 1.2,
+                      letterSpacing: '-0.02em',
+                      margin: 0,
+                    }}
+                  >
+                    Question Bank
+                  </h1>
+                  <p
+                    style={{
+                      fontFamily: "'Inter', system-ui, sans-serif",
+                      fontSize: '12.5px',
+                      color: '#6B7280',
+                      marginTop: '4px',
+                      marginBottom: 0,
+                    }}
+                  >
+                    All sanctioned questions across subjects and classes
+                  </p>
+                </div>
+
+                {/* ── Summary Cards (4 Compact Cards: Questions, Subjects, Types, Last Updated) ── */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    {
+                      label: 'Questions',
+                      value: questions.length,
+                      color: '#72102a',
+                      onClick: handleResetFilters,
+                      tooltip: 'Total questions in repository (Click to view all)',
+                    },
+                    {
+                      label: 'Subjects',
+                      value: [...new Set(questions.map((q) => q.subject).filter(Boolean))].length,
+                      color: '#059669',
+                      tooltip: 'Total academic subjects covered',
+                    },
+                    {
+                      label: 'Question Types',
+                      value: [...new Set(questions.map((q) => q.type).filter(Boolean))].length,
+                      color: '#7a422bff',
+                      tooltip: 'Unique question formats and types',
+                    },
+                    {
+                      label: 'Last Updated',
+                      value: 'Today',
+                      color: '#0f766e',
+                      tooltip: 'Latest question bank activity recorded',
+                    },
+                  ].map((stat) => (
+                    <div
+                      key={stat.label}
+                      onClick={stat.onClick}
+                      className={`bg-white rounded-xl border border-[#E8E2D9] px-5 py-3.5 transition-all duration-150 shadow-sm flex flex-col justify-center ${stat.onClick ? 'cursor-pointer hover:shadow-md hover:border-[#72102a]/40' : 'hover:shadow'
+                        }`}
+                      title={stat.tooltip}
+                    >
+                      <div
+                        className="text-2xl md:text-3xl font-extrabold leading-none mb-1.5 tracking-tight"
+                        style={{ color: stat.color }}
+                      >
+                        {stat.value}
+                      </div>
+                      <div className="text-xs font-semibold text-gray-700">
+                        {stat.label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
                 {/* Search & Filter Controls */}
                 <div className="flex-shrink-0">
                   <QuestionFilters
@@ -362,7 +363,17 @@ export default function QuestionBank() {
                   </div>
                 )}
               </>
-            ) : (
+            )}
+
+            {/* ── TEACHER MANAGEMENT VIEW ── */}
+            {activeNav === 'teacherManagement' && (
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                <TeacherManagement />
+              </div>
+            )}
+
+            {/* ── COMING SOON VIEW FOR OTHER SECTIONS ── */}
+            {activeNav !== 'questionBank' && activeNav !== 'teacherManagement' && (
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <ComingSoonPlaceholder activeNav={activeNav} />
               </div>

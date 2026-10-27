@@ -4,14 +4,69 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/src/assets/images/sps_logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Question Bank — South Point School</title>
+    <title>South Point School — Question Bank & Teacher Management</title>
     <!-- Tailwind CSS CDN for instant styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
-        darkMode: 'class',
         theme: {
           extend: {
+            colors: {
+              maroon: {
+                DEFAULT: '#72102A', // Primary Brand Maroon
+                mid: '#8B1F3A',     // Primary Mid
+                dark: '#5C0C21',    // Deep Maroon
+                light: '#F5E6EA',   // Soft Rose Cream
+                pale: '#FDF5F7',    // Pale Rose Cream
+                50: '#FDF5F7',
+                100: '#F5E6EA',
+                200: '#E6C4CD',
+                300: '#CE8B9C',
+                400: '#AB4D66',
+                500: '#8B1F3A',     // Primary Mid / Hover
+                600: '#72102A',     // Primary Brand Maroon
+                700: '#5C0C21',     // Deep Maroon
+                800: '#420817',
+                900: '#29040E',
+                950: '#170208',
+              },
+              gold: {
+                DEFAULT: '#C9A84C', // Accent Gold
+                dark: '#A68A3D',    // Warm Amber Gold
+                light: '#FDF8E8',   // Light Amber Gold
+                50: '#FDF8E8',
+                100: '#F8EFCD',
+                200: '#EED996',
+                300: '#E2C15F',
+                400: '#D5B438',
+                500: '#C9A84C',     // Accent Gold
+                600: '#A68A3D',     // Accent Dark / Warm Amber Gold
+                700: '#836A2B',
+                800: '#604C1C',
+                900: '#3F3110',
+              },
+              cream: {
+                DEFAULT: '#FAF8F5', // Canvas / Background
+                50: '#FFFFFF',      // Surface / Cards
+                100: '#FAF8F5',     // Canvas / Background Warm Cream
+                200: '#F3EEE5',
+                300: '#E6DCCD',
+                400: '#D4C3AC',
+              },
+              charcoal: {
+                DEFAULT: '#1A1A1A', // Text Ink
+                50: '#F7F7F7',
+                100: '#E3E3E3',
+                200: '#C8C8C8',
+                300: '#A4A4A4',
+                400: '#767676',
+                500: '#525252',
+                600: '#3D3D3D',
+                700: '#2D2D2D',
+                800: '#222222',
+                900: '#1A1A1A',
+              }
+            },
             fontFamily: {
               sans: ['Inter', 'system-ui', 'sans-serif'],
               heading: ['Outfit', 'sans-serif'],
@@ -25,7 +80,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   </head>
-  <body class="antialiased">
+  <body class="bg-[#FAF8F5] text-[#1A1A1A] antialiased selection:bg-[#72102A] selection:text-white min-h-screen">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

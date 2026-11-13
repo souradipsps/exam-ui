@@ -620,33 +620,18 @@ export default function TeacherManagement() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {filteredAssignments.map(asn => {
                 const assignedTeachersList = teachers.filter(t => (asn.teacherIds || []).includes(t.id));
                 return (
                   <div
                     key={asn.id}
-                    className="bg-white border border-stone-200/90 hover:border-[#C9A84C] rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+                    className="bg-white border border-[#C9A84C] rounded-2xl p-6 min-h-[480px] shadow-md transition-all duration-300 flex flex-col justify-between group"
                   >
                     <div>
                       {/* Header Badge & Action Buttons (Edit / Delete) */}
-                      <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-start justify-between gap-3 mb-4 -mx-6 -mt-6 px-6 py-4 border-b border-stone-200">
                         <div>
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="font-mono text-xs font-bold text-[#72102A] bg-[#F5E6EA] px-2 py-0.5 rounded border border-[#E6C4CD]">
-                              {asn.id}
-                            </span>
-                            <span className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border ${
-                              asn.type === 'question'
-                                ? 'bg-[#FDF8E8] text-[#A68A3D] border-[#C9A84C]/40'
-                                : 'bg-[#F5E6EA] text-[#72102A] border-[#E6C4CD]'
-                            }`}>
-                              {asn.type === 'question' ? 'Specific Questions Assignment' : 'Question Type Assignment'}
-                            </span>
-                            <span className="text-[11px] font-semibold text-stone-600 bg-[#FAF8F5] px-2 py-0.5 rounded border border-stone-200">
-                              {asn.program}
-                            </span>
-                          </div>
                           <h3 className="font-bold text-[#1A1A1A] text-lg">{asn.subject}</h3>
                         </div>
 
@@ -667,6 +652,23 @@ export default function TeacherManagement() {
                             <Icon name="trash" className="w-4 h-4" />
                           </button>
                         </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-4 flex-wrap">
+                        <span className="font-mono text-xs font-bold text-[#72102A] bg-[#F5E6EA] px-2 py-0.5 rounded border border-[#E6C4CD]">
+                          {asn.id}
+                        </span>
+                        <span className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border ${
+                          asn.type === 'question'
+                            ? 'bg-[#FDF8E8] text-[#A68A3D] border-[#C9A84C]/40'
+                            : 'bg-[#F5E6EA] text-[#72102A] border-[#E6C4CD]'
+                        }`}>
+                          {asn.type === 'question' ? 'Specific Questions Assignment' : 'Question Type Assignment'}
+                        </span>
+                        <div className="basis-full h-0" />
+                        <span className="text-[11px] font-semibold text-stone-600 bg-[#FAF8F5] px-2 py-0.5 rounded border border-stone-200">
+                          {asn.program}
+                        </span>
                       </div>
 
                       {/* Content details depending on assignment type */}
@@ -727,18 +729,20 @@ export default function TeacherManagement() {
                           ))}
                         </div>
                       </div>
+                    </div>
 
+                    <div>
                       {/* Instructions Preview */}
                       {asn.instructions && (
                         <div className="p-3 rounded-xl bg-[#FDF8E8] border border-[#C9A84C]/30 text-xs text-stone-700 italic">
                           "{asn.instructions}"
                         </div>
                       )}
-                    </div>
 
-                    <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between text-[11px] text-stone-500 font-mono">
-                      <span>Created: {asn.createdAt}</span>
-                      {asn.updatedAt && <span className="text-[#72102A] font-semibold">Updated: {asn.updatedAt}</span>}
+                      <div className="mt-2 flex items-center justify-center gap-3 text-[11px] text-stone-500 font-mono">
+                        <span>Created: {asn.createdAt}</span>
+                        {asn.updatedAt && <span className="text-[#72102A] font-semibold">Updated: {asn.updatedAt}</span>}
+                      </div>
                     </div>
                   </div>
                 );

@@ -205,6 +205,7 @@ export default function QuestionBank() {
             overflowX: 'hidden',
             padding: '0',
             outline: 'none',
+            background: activeNav === 'teacherManagement' ? '#ffffff' : undefined,
           }}
         >
           <div

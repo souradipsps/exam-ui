@@ -1,15 +1,17 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import TopBar from './layout/TopBar.jsx';
-import Sidebar from './layout/Sidebar.jsx';
-import ComingSoonPlaceholder from './layout/ComingSoonPlaceholder.jsx';
-import QuestionFilters from './question-bank/QuestionFilters.jsx';
-import Pagination from './question-bank/Pagination.jsx';
-import QuestionTable from './question-bank/QuestionTable.jsx';
-import QuestionDetailsModal from './modals/QuestionDetailsModal.jsx';
-import QuestionEditModal from './modals/QuestionEditModal.jsx';
-import QuestionHistoryModal from './modals/QuestionHistoryModal.jsx';
-import QuestionDeleteModal from './modals/QuestionDeleteModal.jsx';
-import Icon from './common/Icon.jsx';
+import TopBar from '../Components/layout/TopBar.jsx';
+import Sidebar from '../Components/layout/Sidebar.jsx';
+import ComingSoonPlaceholder from '../Components/layout/ComingSoonPlaceholder.jsx';
+import QuestionFilters from '../Components/question-bank/QuestionFilters.jsx';
+import Pagination from '../Components/question-bank/Pagination.jsx';
+import QuestionTable from '../Components/question-bank/QuestionTable.jsx';
+import QuestionCards from '../Components/question-bank/QuestionCards.jsx';
+import ViewToggle from '../Components/question-bank/ViewToggle.jsx';
+import QuestionDetailsModal from '../Components/modals/QuestionDetailsModal.jsx';
+import QuestionEditModal from '../Components/modals/QuestionEditModal.jsx';
+import QuestionHistoryModal from '../Components/modals/QuestionHistoryModal.jsx';
+import QuestionDeleteModal from '../Components/modals/QuestionDeleteModal.jsx';
+import Icon from '../Components/common/Icon.jsx';
 import { INITIAL_QUESTIONS } from '../data/mockQuestions.js';
 import { NAV_ITEMS } from '../data/navigation.js';
 import TeacherManagement from './TeacherManagement.jsx';
@@ -27,6 +29,7 @@ export default function QuestionBank() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'grid'
 
   const [modal, setModal] = useState(null); // 'details' | 'edit' | 'history' | 'delete'
   const [current, setCurrent] = useState(null);
@@ -198,8 +201,9 @@ export default function QuestionBank() {
             display: 'flex',
             flexDirection: 'column',
             minHeight: '0px',
-            overflow: 'hidden',
-            padding: '20px 32px',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            padding: '0',
             outline: 'none',
             background: activeNav === 'teacherManagement' ? '#ffffff' : undefined,
           }}
@@ -208,9 +212,8 @@ export default function QuestionBank() {
             style={{
               display: 'flex',
               flexDirection: 'column',
-              flex: '1 1 0%',
-              minHeight: '0px',
               gap: '14px',
+              padding: '20px 32px 20px 32px',
             }}
           >
             {/* Toast Notification */}
@@ -320,12 +323,25 @@ export default function QuestionBank() {
                   />
                 </div>
 
-                {/* Questions Display — Table only with paginated subset */}
-                <QuestionTable
-                  questions={paginatedQuestions}
-                  onOpenModal={openModal}
-                  onOpenEdit={handleOpenEdit}
-                />
+                {/* View switcher */}
+                <div className="flex-shrink-0 flex justify-end">
+                  <ViewToggle view={viewMode} onChange={setViewMode} />
+                </div>
+
+                {/* Questions Display — list or card view */}
+                {viewMode === 'grid' ? (
+                  <QuestionCards
+                    questions={paginatedQuestions}
+                    onOpenModal={openModal}
+                    onOpenEdit={handleOpenEdit}
+                  />
+                ) : (
+                  <QuestionTable
+                    questions={paginatedQuestions}
+                    onOpenModal={openModal}
+                    onOpenEdit={handleOpenEdit}
+                  />
+                )}
 
                 {/* Bottom Full-Featured Pagination Bar */}
                 {filtered.length > 0 && (

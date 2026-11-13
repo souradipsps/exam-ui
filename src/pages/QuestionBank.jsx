@@ -201,8 +201,9 @@ export default function QuestionBank() {
             display: 'flex',
             flexDirection: 'column',
             minHeight: '0px',
-            overflow: 'hidden',
-            padding: '20px 32px',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            padding: '0',
             outline: 'none',
           }}
         >
@@ -210,9 +211,8 @@ export default function QuestionBank() {
             style={{
               display: 'flex',
               flexDirection: 'column',
-              flex: '1 1 0%',
-              minHeight: '0px',
               gap: '14px',
+              padding: '20px 32px 20px 32px',
             }}
           >
             {/* Toast Notification */}

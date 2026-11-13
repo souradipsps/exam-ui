@@ -204,10 +204,10 @@ function VersionInfo() {
 export default function QuestionTable({ questions, onOpenModal, onOpenEdit }) {
   return (
     <div
-      className="bg-white rounded-xl border shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden"
+      className="bg-white rounded-xl border shadow-sm overflow-hidden"
       style={{ borderColor: '#E8E2D9' }}
     >
-      <div className="overflow-auto flex-1 min-h-0 custom-scrollbar">
+      <div className="overflow-x-auto custom-scrollbar">
         <table className="w-full text-left text-xs border-collapse">
           <thead className="sticky top-0 z-10">
             <tr className="text-gray-500 uppercase tracking-wide text-[11px]">

@@ -194,7 +194,9 @@ const INITIAL_TEACHERS = [
     designation: "Professor & HOD",
     department: "Computer Science",
     avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Artificial Intelligence", "Machine Learning", "Data Structures"]
+    subjects: ["Artificial Intelligence", "Machine Learning", "Data Structures"],
+    classes: ["Class 9", "Class 10"],
+    sections: ["A", "B"]
   },
   {
     id: "TCH-1007",
@@ -202,7 +204,9 @@ const INITIAL_TEACHERS = [
     designation: "Associate Professor",
     department: "Computer Science",
     avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Artificial Intelligence", "Data Structures", "Web Architecture"]
+    subjects: ["Artificial Intelligence", "Data Structures", "Web Architecture"],
+    classes: ["Class 11", "Class 12"],
+    sections: ["A", "C"]
   },
   {
     id: "TCH-1002",
@@ -210,7 +214,9 @@ const INITIAL_TEACHERS = [
     designation: "Associate Professor",
     department: "Mathematics",
     avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Linear Algebra", "Calculus III", "Discrete Math"]
+    subjects: ["Linear Algebra", "Calculus III", "Discrete Math"],
+    classes: ["Class 10", "Class 11"],
+    sections: ["B", "C"]
   },
   {
     id: "TCH-1008",
@@ -218,7 +224,9 @@ const INITIAL_TEACHERS = [
     designation: "Assistant Professor",
     department: "Mathematics",
     avatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Linear Algebra", "Discrete Math", "Calculus III"]
+    subjects: ["Linear Algebra", "Discrete Math", "Calculus III"],
+    classes: ["Class 9", "Class 11"],
+    sections: ["A", "B"]
   },
   {
     id: "TCH-1003",
@@ -226,7 +234,9 @@ const INITIAL_TEACHERS = [
     designation: "Assistant Professor",
     department: "Physics",
     avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Quantum Mechanics", "Electromagnetism", "Optics Lab"]
+    subjects: ["Quantum Mechanics", "Electromagnetism", "Optics Lab"],
+    classes: ["Class 11", "Class 12"],
+    sections: ["B", "D"]
   },
   {
     id: "TCH-1004",
@@ -234,7 +244,9 @@ const INITIAL_TEACHERS = [
     designation: "Senior Lecturer",
     department: "English Literature",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Modern Poetry", "Shakespearean Studies", "Creative Writing"]
+    subjects: ["Modern Poetry", "Shakespearean Studies", "Creative Writing"],
+    classes: ["Class 8", "Class 9"],
+    sections: ["A", "C"]
   },
   {
     id: "TCH-1005",
@@ -242,7 +254,9 @@ const INITIAL_TEACHERS = [
     designation: "Professor",
     department: "Chemistry",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Organic Chemistry", "Biochemistry", "Thermodynamics"]
+    subjects: ["Organic Chemistry", "Biochemistry", "Thermodynamics"],
+    classes: ["Class 10", "Class 12"],
+    sections: ["A", "D"]
   },
   {
     id: "TCH-1006",
@@ -250,7 +264,9 @@ const INITIAL_TEACHERS = [
     designation: "Assistant Lecturer",
     department: "Art & Design",
     avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-    subjects: ["UI/UX Design", "Digital Illustration", "Art History"]
+    subjects: ["UI/UX Design", "Digital Illustration", "Art History"],
+    classes: ["Class 6", "Class 7"],
+    sections: ["B", "C"]
   }
 ];
 
@@ -340,7 +356,8 @@ export default function TeacherManagement() {
   
   // Search & Active Tab State
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('assignments'); // 'teachers' | 'assignments' | 'logs'
+  const [activeTab, setActiveTab] = useState('teachers'); // 'teachers' | 'assignments' | 'logs'
+  const [activeStatus, setActiveStatus] = useState('All'); // display-only status tabs
   
   // Modal Workflow State:
   // step: 'selectOption' | 'questionTypeForm' | 'questionForm'
@@ -352,6 +369,8 @@ export default function TeacherManagement() {
   // Form State for Program & Subject Selection (Question Type Assignment)
   const [selectedProgram, setSelectedProgram] = useState("B.Tech - Computer Science Engineering");
   const [selectedSubject, setSelectedSubject] = useState("Artificial Intelligence (CS-401)");
+  const [selectedExam, setSelectedExam] = useState("Term I Exam");
+  const [selectedSession, setSelectedSession] = useState("2026-27");
 
   // Form State for Question Types Assignment (Step 2A)
   const [selectedQuestionTypes, setSelectedQuestionTypes] = useState(['Multiple Choice (MCQ)', 'Essay']);
@@ -438,7 +457,7 @@ export default function TeacherManagement() {
         setSelectedTeacherIds([]);
       }
     }
-  }, [mappedTeachers, selectedProgram, selectedSubject, editingAssignment]);
+  }, [mappedTeachers, selectedProgram, selectedSubject, editingAssignment, isAssignmentModalOpen]);
 
   // Handler when Program dropdown changes
   const handleProgramChange = (e) => {
@@ -468,6 +487,8 @@ export default function TeacherManagement() {
   const [teacherDeptFilter, setTeacherDeptFilter] = useState('All');
   const [teacherDesignationFilter, setTeacherDesignationFilter] = useState('All');
   const [teacherSubjectFilter, setTeacherSubjectFilter] = useState('All');
+  const [teacherClassFilter, setTeacherClassFilter] = useState('All');
+  const [teacherSectionFilter, setTeacherSectionFilter] = useState('All');
 
   // Derived options for Teacher List Filters
   const uniqueDepartments = useMemo(() => {
@@ -480,6 +501,14 @@ export default function TeacherManagement() {
 
   const uniqueTeacherSubjects = useMemo(() => {
     return ['All', ...new Set(teachers.flatMap(t => t.subjects))];
+  }, [teachers]);
+
+  const uniqueTeacherClasses = useMemo(() => {
+    return ['All', ...new Set(teachers.flatMap(t => t.classes || []))];
+  }, [teachers]);
+
+  const uniqueTeacherSections = useMemo(() => {
+    return ['All', ...new Set(teachers.flatMap(t => t.sections || []))];
   }, [teachers]);
 
   // Filtered Teachers List
@@ -499,9 +528,12 @@ export default function TeacherManagement() {
       const matchesDesignation = teacherDesignationFilter === 'All' || teacher.designation === teacherDesignationFilter;
       const matchesSubject = teacherSubjectFilter === 'All' || (Array.isArray(teacher.subjects) && teacher.subjects.includes(teacherSubjectFilter));
 
-      return matchesSearch && matchesDept && matchesDesignation && matchesSubject;
+      const matchesClass = teacherClassFilter === 'All' || (Array.isArray(teacher.classes) && teacher.classes.includes(teacherClassFilter));
+      const matchesSection = teacherSectionFilter === 'All' || (Array.isArray(teacher.sections) && teacher.sections.includes(teacherSectionFilter));
+
+      return matchesSearch && matchesDept && matchesDesignation && matchesSubject && matchesClass && matchesSection;
     });
-  }, [teachers, searchTerm, teacherDeptFilter, teacherDesignationFilter, teacherSubjectFilter]);
+  }, [teachers, searchTerm, teacherDeptFilter, teacherDesignationFilter, teacherSubjectFilter, teacherClassFilter, teacherSectionFilter]);
 
   // Filtered Assignments List
   const filteredAssignments = useMemo(() => {
@@ -708,7 +740,7 @@ export default function TeacherManagement() {
     const formData = new FormData(e.target);
     const program = formData.get('program') || selectedProgram;
     const subject = formData.get('subject') || selectedSubject;
-    const tchId = formData.get('teacherId');
+    const tchId = selectedTeacherIds[0];
     const teacher = teachers.find(t => t.id === tchId) || teachers[0];
     const totalMarks = formData.get('totalMarks') || '50';
     const instructions = formData.get('instructions');
@@ -830,7 +862,7 @@ export default function TeacherManagement() {
               margin: 0,
             }}
           >
-            Teacher Management
+            Educator Management
           </h1>
           <p
             style={{
@@ -846,17 +878,28 @@ export default function TeacherManagement() {
         </div>
 
         {/* PRIMARY ACTION BUTTON */}
+        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
         <button
-          onClick={() => handleOpenModal(null)}
+          onClick={() => { setEditingAssignment(null); setAssignmentStep('questionTypeForm'); setIsAssignmentModalOpen(true); }}
           className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#72102A] hover:bg-[#8B1F3A] text-white shadow-md shadow-[#72102A]/20 border border-[#8B1F3A] transition-all text-xs font-bold hover:scale-[1.02] active:scale-[0.98]"
         >
           <Icon name="plus" className="w-4 h-4 text-[#C9A84C]" />
-          Create New Teacher Assignment
+          Request Question Type Assignment
         </button>
+        <button
+          onClick={() => { setEditingAssignment(null); setAssignmentStep('questionForm'); setIsAssignmentModalOpen(true); }}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#72102A] hover:bg-[#8B1F3A] text-white shadow-md shadow-[#72102A]/20 border border-[#8B1F3A] transition-all text-xs font-bold hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <Icon name="plus" className="w-4 h-4 text-[#C9A84C]" />
+          Request Question Assignment
+        </button>
+        </div>
+        </div>
       </header>
 
       {/* CONTROLS: SEARCH BAR & VIEW TABS */}
-      <div className="bg-white border border-stone-200 rounded-2xl p-4 mb-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:flex-wrap items-center justify-between gap-4">
         {/* SEARCH INPUT */}
         <div className="relative w-full sm:w-80">
           <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
@@ -883,43 +926,464 @@ export default function TeacherManagement() {
           )}
         </div>
 
-        {/* VIEW TABS SWITCHER */}
-        <div className="flex items-center gap-1 bg-[#FAF8F5] p-1 rounded-xl border border-stone-200 w-full sm:w-auto justify-center flex-wrap">
-          <button
-            onClick={() => setActiveTab('assignments')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'assignments'
-                ? 'bg-[#72102A] text-white shadow-md'
-                : 'text-stone-600 hover:text-[#72102A] hover:bg-[#F5E6EA]/50'
-            }`}
-          >
-            <Icon name="documentText" className="w-4 h-4" />
-            Question Type Assignments ({filteredAssignments.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('teachers')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'teachers'
-                ? 'bg-[#72102A] text-white shadow-md'
-                : 'text-stone-600 hover:text-[#72102A] hover:bg-[#F5E6EA]/50'
-            }`}
-          >
-            <Icon name="user" className="w-4 h-4" />
-            Teacher List ({filteredTeachers.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('logs')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'logs'
-                ? 'bg-[#72102A] text-white shadow-md'
-                : 'text-stone-600 hover:text-[#72102A] hover:bg-[#F5E6EA]/50'
-            }`}
-          >
-            <Icon name="clock" className="w-4 h-4" />
-            Activity Logs ({filteredLogs.length})
-          </button>
+        {/* STATUS TABS (display only) — hidden for now, remove this comment marker and the closing one below to restore
+        <div className="flex items-center gap-2 w-full sm:basis-full sm:order-last flex-wrap">
+          {[
+            { label: 'All', count: filteredAssignments.length },
+            { label: 'Pending', count: 0 },
+            { label: 'Approved', count: 0 },
+            { label: 'Rejected', count: 0 },
+            { label: 'Cancelled', count: 0 },
+            { label: 'Send Back', count: 0 },
+          ].map(st => (
+            <button
+              key={st.label}
+              onClick={() => setActiveStatus(st.label)}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-bold transition-all ${
+                activeStatus === st.label
+                  ? 'bg-[#72102A] text-white border-[#72102A]'
+                  : 'bg-white text-[#1A1A1A] border-stone-200 hover:border-[#72102A]'
+              }`}
+            >
+              {st.label}
+              <span className={`px-1.5 py-px rounded-full text-[10px] font-extrabold ${
+                activeStatus === st.label ? 'bg-white/25 text-white' : 'bg-stone-200 text-stone-600'
+              }`}>
+                {st.count}
+              </span>
+            </button>
+          ))}
         </div>
+        */}
       </div>
+
+      {/* ========================================== */}
+      {/* MODAL: CREATE NEW TEACHER ASSIGNMENT */}
+      {/* ========================================== */}
+      {isAssignmentModalOpen && (
+        <div className={(assignmentStep === 'questionTypeForm' || assignmentStep === 'questionForm') ? "mb-6 animate-fadeIn" : "fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-stone-900/60 backdrop-blur-sm animate-fadeIn"}>
+          <div className={(assignmentStep === 'questionTypeForm' || assignmentStep === 'questionForm') ? "w-full relative text-[#1A1A1A]" : "bg-white border border-stone-200 rounded-3xl max-w-2xl w-full p-6 sm:p-8 md:p-10 shadow-2xl relative max-h-[92vh] overflow-y-auto text-[#1A1A1A]"}>
+            {/* Close Button */}
+            {assignmentStep !== 'selectOption' && (
+            <button
+              onClick={() => setIsAssignmentModalOpen(false)}
+              className="absolute top-3 right-3 p-1.5 rounded-lg bg-[#FAF8F5] text-stone-400 hover:text-stone-700 transition-colors border border-stone-200"
+            >
+              <Icon name="close" className="w-4 h-4" />
+            </button>
+            )}
+
+            {/* STEP 1: CHOICE SELECTION (ASK 2 QUESTIONS / MODES) */}
+            {assignmentStep === 'selectOption' && (
+              <div>
+                <div className="flex items-center justify-between gap-3.5 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 md:-mx-10 md:-mt-10 mb-6 px-6 sm:px-8 py-8 rounded-t-3xl bg-gradient-to-br from-[#72102A] to-[#3D0716]">
+                  <div className="flex items-center gap-3.5">
+                    <div className="p-3 bg-white/15 border border-white/20 rounded-xl text-white">
+                      <Icon name="clipboard" className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">Create Teacher Assignment</h2>
+                      <p className="text-sm text-white/75 mt-0.5">Select how you want to structure this assignment for faculty members</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsAssignmentModalOpen(false)}
+                    className="flex-shrink-0 p-2 rounded-lg bg-white text-stone-400 hover:text-stone-700 transition-colors border border-stone-200"
+                  >
+                    <Icon name="close" className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="my-6 space-y-4">
+                  {/* CHOICE 1: ADD QUESTION TYPE ASSIGNMENT */}
+                  <button
+                    onClick={() => setAssignmentStep('questionTypeForm')}
+                    className="w-full text-left p-6 rounded-2xl bg-[#FDF5F7] border border-[#72102A] transition-all group flex items-start gap-5 shadow-sm"
+                  >
+                    <div className="p-3.5 rounded-xl bg-[#F5E6EA] border border-[#E6C4CD] text-[#72102A] scale-105 transition-transform flex-shrink-0">
+                      <Icon name="documentText" className="w-7 h-7" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-[#72102A] text-lg transition-colors">
+                          Add Question Type Assignment
+                        </h3>
+                        <span className="text-xs font-bold uppercase px-3 py-1 rounded-full bg-[#F5E6EA] text-[#72102A] border border-[#E6C4CD]">
+                          Option 1
+                        </span>
+                      </div>
+                      <p className="text-sm text-stone-600 mt-1.5 leading-relaxed">
+                        Assign tasks based on question formats (Multiple Choice, Essay, Short Answer, True/False, or Coding Tasks) mapped to curriculum courses.
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* CHOICE 2: ADD QUESTION ASSIGNMENT */}
+                  <button
+                    onClick={() => setAssignmentStep('questionForm')}
+                    className="w-full text-left p-6 rounded-2xl bg-[#FDF8E8] border border-[#C9A84C] transition-all group flex items-start gap-5 shadow-sm"
+                  >
+                    <div className="p-3.5 rounded-xl bg-[#FDF8E8] border border-[#C9A84C]/40 text-[#A68A3D] scale-105 transition-transform flex-shrink-0">
+                      <Icon name="questionMarkCircle" className="w-7 h-7" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-[#A68A3D] text-lg transition-colors">
+                          Add Question Assignment
+                        </h3>
+                        <span className="text-xs font-bold uppercase px-3 py-1 rounded-full bg-[#FDF8E8] text-[#A68A3D] border border-[#C9A84C]/40">
+                          Option 2
+                        </span>
+                      </div>
+                      <p className="text-sm text-stone-600 mt-1.5 leading-relaxed">
+                        Assign specific questions selected directly from the Question Bank to a teacher for evaluation or grading.
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2A: FORM FOR QUESTION TYPE ASSIGNMENT */}
+            {assignmentStep === 'questionTypeForm' && (
+              <div>
+                <div className="mb-6 pb-4 border-b border-stone-200">
+                  <h2 className="text-2xl font-bold text-[#1A1A1A] flex items-center gap-2">
+                    <Icon name="documentText" className="w-6 h-6 text-[#72102A]" />
+                    {editingAssignment ? 'Edit Question Type Assignment' : 'Add Question Type Assignment'}
+                  </h2>
+                  <p className="text-sm text-stone-500 mt-1">
+                    {editingAssignment ? 'Modify configuration for this assignment.' : 'Structure assignment by specifying allowed question formats, subject blueprints, and mapped teachers.'}
+                  </p>
+                </div>
+
+                <form onSubmit={handleSaveQuestionTypeAssignment} className="space-y-6 bg-white border border-stone-200 border-t-2 border-t-[#72102A] rounded-lg p-5 shadow-sm">
+                  {/* Responsive 2-column grid for Class / Program & Subject selection */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* 1. Select Exam Details */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                        1. Select Exam Details
+                      </label>
+                      <select
+                        name="exam"
+                        value={selectedExam}
+                        onChange={(e) => setSelectedExam(e.target.value)}
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                      >
+                        {['Term I Exam', 'Half-Yearly Exam', 'Term II Exam', 'Annual Exam'].map(ex => (
+                          <option key={ex} value={ex}>{ex}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 2. Select Session */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                        2. Select Session
+                      </label>
+                      <select
+                        name="session"
+                        value={selectedSession}
+                        onChange={(e) => setSelectedSession(e.target.value)}
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                      >
+                        {['2025-26', '2026-27', '2027-28'].map(ses => (
+                          <option key={ses} value={ses}>{ses}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 3. Select Class / Program */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                        3. Select Class / Program
+                      </label>
+                      <select
+                        name="program"
+                        value={selectedProgram}
+                        onChange={handleProgramChange}
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                      >
+                        {Object.keys(PROGRAM_SUBJECT_MAP).map(prog => (
+                          <option key={prog} value={prog}>{prog}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 4. Select Subject / Course */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                        4. Select Subject / Course
+                      </label>
+                      <select
+                        name="subject"
+                        value={selectedSubject}
+                        onChange={(e) => setSelectedSubject(e.target.value)}
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer font-medium"
+                      >
+                        {(PROGRAM_SUBJECT_MAP[selectedProgram] || []).map(sub => (
+                          <option key={sub} value={sub}>{sub}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* 3. Loaded Exam Question Blueprint — hidden for now, remove this comment marker and the closing one below to restore
+                  {currentBlueprint && (
+                    <div className="p-4 sm:p-5 rounded-2xl bg-[#FDF8E8] border border-[#C9A84C]/40 shadow-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 border-b border-[#C9A84C]/20 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="p-1.5 rounded-lg bg-[#C9A84C]/20 text-[#A68A3D]">
+                            <Icon name="documentText" className="w-5 h-5" />
+                          </span>
+                          <div>
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#A68A3D]">Exam Question Blueprint (Auto-Loaded)</span>
+                            <h4 className="text-sm font-bold text-[#1A1A1A]">{selectedSubject}</h4>
+                          </div>
+                        </div>
+                        <span className="text-xs font-bold text-[#72102A] bg-[#F5E6EA] px-3 py-1 rounded-lg border border-[#E6C4CD] self-start sm:self-auto">
+                          {currentBlueprint.totalMarks} Total Marks ({currentBlueprint.duration})
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {currentBlueprint.sections.map((sec, idx) => (
+                          <div key={idx} className="p-3 rounded-xl bg-white border border-stone-200 text-xs flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-[#1A1A1A]">{sec.name}</p>
+                              <p className="text-[11px] text-stone-500">{sec.count} Qs ({sec.type})</p>
+                            </div>
+                            <span className="font-mono text-xs font-bold text-[#72102A] bg-[#F5E6EA] px-2 py-0.5 rounded border border-[#E6C4CD]">
+                              {sec.marks} Marks
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  */}
+
+                  {/* 4. Mapped Teachers Button & Selection Preview */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-2">
+                      5. Mapped Teachers
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                      {mappedTeachers.map(teacher => {
+                        const isSelected = selectedTeacherIds.includes(teacher.id);
+                        return (
+                          <label
+                            key={teacher.id}
+                            className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs sm:text-sm cursor-pointer transition-all ${
+                              isSelected
+                                ? 'bg-[#F5E6EA] text-[#72102A] border-[#E6C4CD] shadow-sm'
+                                : 'bg-white text-stone-600 border-stone-200 hover:border-stone-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3.5">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleTeacherSelection(teacher.id)}
+                                className="w-4 h-4 rounded accent-[#72102A] cursor-pointer flex-shrink-0"
+                              />
+                              <img
+                                src={teacher.avatar}
+                                alt={teacher.name}
+                                className="w-10 h-10 rounded-xl object-cover ring-1 ring-stone-200 flex-shrink-0"
+                              />
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-bold text-[#1A1A1A]">{teacher.name}</p>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#C9A84C]/20 text-[#A68A3D] border border-[#C9A84C]/40">
+                                    Course Mapped
+                                  </span>
+                                </div>
+                                <p className="text-xs text-stone-500">
+                                  {teacher.designation} • {teacher.department}
+                                </p>
+                              </div>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Instructions Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    {/* Instructions */}
+                    <div className="md:col-span-3">
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">Instructions & Guidelines</label>
+                      <textarea
+                        name="instructions"
+                        rows="3"
+                        defaultValue={editingAssignment ? editingAssignment.instructions || "" : ""}
+                        placeholder="e.g. Prepare 10 MCQs and 5 Essay questions for the upcoming midterm exam..."
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Submit buttons */}
+                  <div className="flex items-center justify-end gap-3 pt-5 border-t border-stone-200 mt-6">
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 rounded-md bg-[#72102A] hover:bg-[#8B1F3A] text-white text-sm font-semibold transition-all shadow-md shadow-[#72102A]/20"
+                    >
+                      {editingAssignment ? 'Save Changes' : 'Create Question Type Assignment'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* STEP 2B: FORM FOR SPECIFIC QUESTION ASSIGNMENT */}
+            {assignmentStep === 'questionForm' && (
+              <div>
+                <div className="mb-6 pb-4 border-b border-stone-200">
+                  <h2 className="text-2xl font-bold text-[#1A1A1A] flex items-center gap-2">
+                    <Icon name="questionMarkCircle" className="w-6 h-6 text-[#A68A3D]" />
+                    {editingAssignment ? 'Edit Question Assignment' : 'Add Question Assignment'}
+                  </h2>
+                  <p className="text-sm text-stone-500 mt-1">
+                    {editingAssignment ? 'Modify assigned questions, marks, or target teacher.' : 'Select specific questions from the bank and assign them directly to a teacher.'}
+                  </p>
+                </div>
+
+                <form onSubmit={handleSaveQuestionAssignment} className="space-y-6 bg-white border border-stone-200 border-t-2 border-t-[#C9A84C] rounded-lg p-5 shadow-sm">
+                  {/* Grid for Program & Subject */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* 1. Select Exam Details */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                        1. Select Exam Details
+                      </label>
+                      <select
+                        name="exam"
+                        value={selectedExam}
+                        onChange={(e) => setSelectedExam(e.target.value)}
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                      >
+                        {['Term I Exam', 'Half-Yearly Exam', 'Term II Exam', 'Annual Exam'].map(ex => (
+                          <option key={ex} value={ex}>{ex}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 2. Select Session */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                        2. Select Session
+                      </label>
+                      <select
+                        name="session"
+                        value={selectedSession}
+                        onChange={(e) => setSelectedSession(e.target.value)}
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                      >
+                        {['2025-26', '2026-27', '2027-28'].map(ses => (
+                          <option key={ses} value={ses}>{ses}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 3. Select Class / Program */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                        3. Select Class / Program
+                      </label>
+                      <select
+                        name="program"
+                        value={selectedProgram}
+                        onChange={handleProgramChange}
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                      >
+                        {Object.keys(PROGRAM_SUBJECT_MAP).map(prog => (
+                          <option key={prog} value={prog}>{prog}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 2. Select Subject / Course */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                        4. Select Subject / Course
+                      </label>
+                      <select
+                        name="subject"
+                        value={selectedSubject}
+                        onChange={(e) => setSelectedSubject(e.target.value)}
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer font-medium"
+                      >
+                        {(PROGRAM_SUBJECT_MAP[selectedProgram] || []).map(sub => (
+                          <option key={sub} value={sub}>{sub}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* 3. Select Teacher */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-2">5. Mapped Teachers</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                      {mappedTeachers.map(teacher => {
+                        const isSelected = selectedTeacherIds.includes(teacher.id);
+                        return (
+                          <label
+                            key={teacher.id}
+                            className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs sm:text-sm cursor-pointer transition-all ${
+                              isSelected
+                                ? 'bg-[#FDF8E8] text-stone-900 border-[#C9A84C]/50 shadow-sm'
+                                : 'bg-[#FAF8F5] text-stone-600 border-stone-200 hover:border-stone-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3.5">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleTeacherSelection(teacher.id)}
+                                className="w-4 h-4 rounded accent-[#A68A3D] cursor-pointer flex-shrink-0"
+                              />
+                              <img
+                                src={teacher.avatar}
+                                alt={teacher.name}
+                                className="w-10 h-10 rounded-xl object-cover ring-1 ring-stone-200 flex-shrink-0"
+                              />
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-bold text-[#1A1A1A]">{teacher.name}</p>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#C9A84C]/20 text-[#A68A3D] border border-[#C9A84C]/40">
+                                    Course Mapped
+                                  </span>
+                                </div>
+                                <p className="text-xs text-stone-500">
+                                  {teacher.designation} • {teacher.department}
+                                </p>
+                              </div>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Submit buttons */}
+                  <div className="flex items-center justify-end gap-3 pt-5 border-t border-stone-200 mt-6">
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 rounded-md bg-[#72102A] hover:bg-[#8B1F3A] text-white text-sm font-semibold transition-all shadow-md shadow-[#72102A]/20"
+                    >
+                      {editingAssignment ? 'Save Changes' : 'Create Question Assignment'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ========================================== */}
       {/* TAB 1: QUESTION TYPE ASSIGNMENTS */}
@@ -943,7 +1407,7 @@ export default function TeacherManagement() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="hidden grid-cols-1 md:grid-cols-3 gap-6">
               {filteredAssignments.map(asn => {
                 const assignedTeachersList = teachers.filter(t => (asn.teacherIds || []).includes(t.id));
                 return (
@@ -1078,7 +1542,7 @@ export default function TeacherManagement() {
       {/* ========================================== */}
       {/* TAB 2: TEACHER LIST */}
       {/* ========================================== */}
-      {activeTab === 'teachers' && (
+      {activeTab === 'teachers' && !(isAssignmentModalOpen && (assignmentStep === 'questionTypeForm' || assignmentStep === 'questionForm')) && (
         <div className="space-y-6">
           {/* TEACHER LIST FILTER CONTROLS BAR */}
           <div className="bg-white border border-stone-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
@@ -1089,7 +1553,7 @@ export default function TeacherManagement() {
               <div>
                 <h3 className="text-sm font-bold text-[#1A1A1A] flex items-center gap-2">
                   Filter Faculty Directory
-                  {(teacherDeptFilter !== 'All' || teacherDesignationFilter !== 'All' || teacherSubjectFilter !== 'All') && (
+                  {(teacherDeptFilter !== 'All' || teacherDesignationFilter !== 'All' || teacherSubjectFilter !== 'All' || teacherClassFilter !== 'All' || teacherSectionFilter !== 'All') && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#72102A] text-white">
                       Filtered ({filteredTeachers.length} shown)
                     </span>
@@ -1099,7 +1563,7 @@ export default function TeacherManagement() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1 max-w-2xl">
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 flex-1 max-w-4xl">
               {/* Department Filter */}
               <div>
                 <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">Department</label>
@@ -1141,14 +1605,44 @@ export default function TeacherManagement() {
                   ))}
                 </select>
               </div>
+
+              {/* Class Filter */}
+              <div>
+                <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">Class</label>
+                <select
+                  value={teacherClassFilter}
+                  onChange={(e) => setTeacherClassFilter(e.target.value)}
+                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                >
+                  {uniqueTeacherClasses.map(cls => (
+                    <option key={cls} value={cls}>{cls === 'All' ? 'All Classes' : cls}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Section Filter */}
+              <div>
+                <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">Section</label>
+                <select
+                  value={teacherSectionFilter}
+                  onChange={(e) => setTeacherSectionFilter(e.target.value)}
+                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                >
+                  {uniqueTeacherSections.map(sec => (
+                    <option key={sec} value={sec}>{sec === 'All' ? 'All Sections' : sec}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {(teacherDeptFilter !== 'All' || teacherDesignationFilter !== 'All' || teacherSubjectFilter !== 'All') && (
+            {(teacherDeptFilter !== 'All' || teacherDesignationFilter !== 'All' || teacherSubjectFilter !== 'All' || teacherClassFilter !== 'All' || teacherSectionFilter !== 'All') && (
               <button
                 onClick={() => {
                   setTeacherDeptFilter('All');
                   setTeacherDesignationFilter('All');
                   setTeacherSubjectFilter('All');
+                  setTeacherClassFilter('All');
+                  setTeacherSectionFilter('All');
                 }}
                 className="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-all shrink-0 self-end md:self-center"
               >
@@ -1168,6 +1662,8 @@ export default function TeacherManagement() {
                   setTeacherDeptFilter('All');
                   setTeacherDesignationFilter('All');
                   setTeacherSubjectFilter('All');
+                  setTeacherClassFilter('All');
+                  setTeacherSectionFilter('All');
                 }}
                 className="mt-4 px-4 py-2 rounded-xl bg-[#72102A] text-white text-xs font-semibold hover:bg-[#8B1F3A] transition-all"
               >
@@ -1175,34 +1671,29 @@ export default function TeacherManagement() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <>
+            {/* Mobile card view */}
+            <div className="md:hidden space-y-4">
               {filteredTeachers.map(teacher => (
-                <div
-                  key={teacher.id}
-                  className="bg-white border border-stone-200 hover:border-[#C9A84C] rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between"
-                >
-                  <div>
-                    {/* Teacher Avatar & Header */}
-                    <div className="flex items-center gap-4 mb-4">
-                      <img
-                        src={teacher.avatar}
-                        alt={teacher.name}
-                        className="w-14 h-14 rounded-2xl object-cover ring-2 ring-[#72102A]/20"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-[#1A1A1A] text-base truncate">{teacher.name}</h3>
-                        <p className="text-xs text-stone-500 truncate">{teacher.designation}</p>
-                        <span className="inline-block text-xs text-[#72102A] font-semibold mt-0.5">
-                          {teacher.department}
-                        </span>
-                      </div>
+                <div key={teacher.id} className="bg-white border border-stone-300 rounded-2xl shadow-sm p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={teacher.avatar}
+                      alt={teacher.name}
+                      className="w-12 h-12 rounded-xl object-cover ring-2 ring-[#72102A]/20"
+                    />
+                    <div>
+                      <p className="font-bold text-[#1A1A1A]">{teacher.name}</p>
+                      <p className="text-xs text-stone-600">{teacher.designation}</p>
                     </div>
-
-                    {/* Subjects Badges */}
-                    <div className="mb-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 mb-2">
-                        Assigned Subjects
-                      </p>
+                  </div>
+                  <div className="border-t border-stone-200 pt-3 space-y-3 text-sm">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 mb-0.5">Department</p>
+                      <p className="text-[#72102A] font-semibold">{teacher.department}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 mb-1">Assigned Subjects</p>
                       <div className="flex flex-wrap gap-1.5">
                         {teacher.subjects.map((subject, idx) => (
                           <span
@@ -1214,19 +1705,86 @@ export default function TeacherManagement() {
                         ))}
                       </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 mb-0.5">Assigned Classes</p>
+                        <p className="text-stone-700">{(teacher.classes || []).join(', ')}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 mb-0.5">Assigned Sections</p>
+                        <p className="text-stone-700">{(teacher.sections || []).join(', ')}</p>
+                      </div>
+                    </div>
                   </div>
-
-                  {/* Assign Task Button */}
-                  <button
-                    onClick={() => handleOpenModal(teacher)}
-                    className="w-full mt-2 py-2.5 rounded-xl bg-[#FAF8F5] hover:bg-[#F5E6EA] border border-stone-200 hover:border-[#E6C4CD] text-[#72102A] text-xs font-semibold transition-all flex items-center justify-center gap-2"
-                  >
-                    <Icon name="clipboard" className="w-4 h-4 text-[#72102A]" />
-                    Assign Task to Teacher
-                  </button>
                 </div>
               ))}
             </div>
+
+            <div className="hidden md:block bg-white border border-stone-300 rounded-2xl shadow-sm overflow-x-auto">
+              <table className="w-full min-w-[800px] border-collapse text-sm text-left">
+                <thead>
+                  <tr className="bg-[#FAF8F5] text-[11px] font-semibold uppercase tracking-wider text-stone-600">
+                    <th className="border border-stone-300 px-4 py-3">Educator</th>
+                    <th className="border border-stone-300 px-4 py-3">Designation</th>
+                    <th className="border border-stone-300 px-4 py-3">Department</th>
+                    <th className="border border-stone-300 px-4 py-3">Assigned Subjects</th>
+                    <th className="border border-stone-300 px-4 py-3">Assigned Classes</th>
+                    <th className="border border-stone-300 px-4 py-3">Assigned Sections</th>
+                    <th className="border border-stone-300 px-4 py-3">Activity Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTeachers.map(teacher => (
+                    <tr key={teacher.id} className="hover:bg-[#FDF5F7] transition-colors">
+                      <td className="border border-stone-300 px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={teacher.avatar}
+                            alt={teacher.name}
+                            className="w-10 h-10 rounded-xl object-cover ring-2 ring-[#72102A]/20"
+                          />
+                          <span className="font-bold text-[#1A1A1A]">{teacher.name}</span>
+                        </div>
+                      </td>
+                      <td className="border border-stone-300 px-4 py-3 text-stone-600">{teacher.designation}</td>
+                      <td className="border border-stone-300 px-4 py-3 text-[#72102A] font-semibold">{teacher.department}</td>
+                      <td className="border border-stone-300 px-4 py-3">
+                        <div className="flex flex-wrap gap-1.5">
+                          {teacher.subjects.map((subject, idx) => (
+                            <span
+                              key={idx}
+                              className="bg-[#FAF8F5] text-stone-700 text-xs px-2.5 py-1 rounded-lg border border-stone-200 font-medium"
+                            >
+                              {subject}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="border border-stone-300 px-4 py-3 text-stone-700">{(teacher.classes || []).join(', ')}</td>
+                      <td className="border border-stone-300 px-4 py-3 text-stone-700">{(teacher.sections || []).join(', ')}</td>
+                      <td className="border border-stone-300 px-4 py-3">
+                        {(() => {
+                          const teacherLogs = activityLogs.filter(log => (log.teacherName || '').includes(teacher.name));
+                          return teacherLogs.length === 0 ? (
+                            <span className="text-xs text-stone-400">No recent activity</span>
+                          ) : (
+                            <div className="space-y-2">
+                              {teacherLogs.map(log => (
+                                <div key={log.id}>
+                                  <p className="text-xs font-semibold text-[#72102A]">{log.action}</p>
+                                  <p className="text-[11px] text-stone-500 font-mono">{log.timestamp}</p>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            </>
           )}
         </div>
       )}
@@ -1234,7 +1792,7 @@ export default function TeacherManagement() {
       {/* ========================================== */}
       {/* TAB 3: ACTIVITY LOGS */}
       {/* ========================================== */}
-      {activeTab === 'logs' && (
+      {activeTab === 'logs' && !(isAssignmentModalOpen && (assignmentStep === 'questionTypeForm' || assignmentStep === 'questionForm')) && (
         <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-sm">
           <h2 className="text-lg font-bold text-[#1A1A1A] mb-4 flex items-center gap-2 border-b border-stone-200 pb-3">
             <Icon name="clock" className="w-5 h-5 text-[#72102A]" />
@@ -1273,469 +1831,6 @@ export default function TeacherManagement() {
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {/* ========================================== */}
-      {/* MODAL: CREATE NEW TEACHER ASSIGNMENT */}
-      {/* ========================================== */}
-      {isAssignmentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-stone-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white border border-stone-200 rounded-3xl max-w-3xl md:max-w-4xl w-full p-6 sm:p-8 md:p-10 shadow-2xl relative max-h-[92vh] overflow-y-auto text-[#1A1A1A]">
-            {/* Close Button */}
-            <button
-              onClick={() => setIsAssignmentModalOpen(false)}
-              className="absolute top-6 right-6 p-2 rounded-xl bg-[#FAF8F5] text-stone-400 hover:text-stone-700 transition-colors border border-stone-200"
-            >
-              <Icon name="close" className="w-5 h-5" />
-            </button>
-
-            {/* STEP 1: CHOICE SELECTION (ASK 2 QUESTIONS / MODES) */}
-            {assignmentStep === 'selectOption' && (
-              <div>
-                <div className="flex items-center gap-3.5 mb-6 pb-4 border-b border-stone-200">
-                  <div className="p-3 bg-[#F5E6EA] border border-[#E6C4CD] rounded-xl text-[#72102A]">
-                    <Icon name="clipboard" className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-[#1A1A1A]">Create Teacher Assignment</h2>
-                    <p className="text-sm text-stone-500 mt-0.5">Select how you want to structure this assignment for faculty members</p>
-                  </div>
-                </div>
-
-                <div className="my-6 space-y-4">
-                  {/* CHOICE 1: ADD QUESTION TYPE ASSIGNMENT */}
-                  <button
-                    onClick={() => setAssignmentStep('questionTypeForm')}
-                    className="w-full text-left p-6 rounded-2xl bg-[#FAF8F5] border border-stone-200 hover:border-[#72102A] hover:bg-[#FDF5F7] transition-all group flex items-start gap-5 shadow-sm"
-                  >
-                    <div className="p-3.5 rounded-xl bg-[#F5E6EA] border border-[#E6C4CD] text-[#72102A] group-hover:scale-105 transition-transform flex-shrink-0">
-                      <Icon name="documentText" className="w-7 h-7" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-[#1A1A1A] text-lg group-hover:text-[#72102A] transition-colors">
-                          Add Question Type Assignment
-                        </h3>
-                        <span className="text-xs font-bold uppercase px-3 py-1 rounded-full bg-[#F5E6EA] text-[#72102A] border border-[#E6C4CD]">
-                          Option 1
-                        </span>
-                      </div>
-                      <p className="text-sm text-stone-600 mt-1.5 leading-relaxed">
-                        Assign tasks based on question formats (Multiple Choice, Essay, Short Answer, True/False, or Coding Tasks) mapped to curriculum courses.
-                      </p>
-                    </div>
-                  </button>
-
-                  {/* CHOICE 2: ADD QUESTION ASSIGNMENT */}
-                  <button
-                    onClick={() => setAssignmentStep('questionForm')}
-                    className="w-full text-left p-6 rounded-2xl bg-[#FAF8F5] border border-stone-200 hover:border-[#C9A84C] hover:bg-[#FDF8E8] transition-all group flex items-start gap-5 shadow-sm"
-                  >
-                    <div className="p-3.5 rounded-xl bg-[#FDF8E8] border border-[#C9A84C]/40 text-[#A68A3D] group-hover:scale-105 transition-transform flex-shrink-0">
-                      <Icon name="questionMarkCircle" className="w-7 h-7" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-[#1A1A1A] text-lg group-hover:text-[#A68A3D] transition-colors">
-                          Add Question Assignment
-                        </h3>
-                        <span className="text-xs font-bold uppercase px-3 py-1 rounded-full bg-[#FDF8E8] text-[#A68A3D] border border-[#C9A84C]/40">
-                          Option 2
-                        </span>
-                      </div>
-                      <p className="text-sm text-stone-600 mt-1.5 leading-relaxed">
-                        Assign specific questions selected directly from the Question Bank to a teacher for evaluation or grading.
-                      </p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 2A: FORM FOR QUESTION TYPE ASSIGNMENT */}
-            {assignmentStep === 'questionTypeForm' && (
-              <div>
-                <button
-                  onClick={() => setAssignmentStep('selectOption')}
-                  className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-[#72102A] mb-4 transition-colors font-medium"
-                >
-                  <Icon name="arrowLeft" className="w-4 h-4" />
-                  Back to options
-                </button>
-
-                <div className="mb-6 pb-4 border-b border-stone-200">
-                  <h2 className="text-2xl font-bold text-[#1A1A1A] flex items-center gap-2">
-                    <Icon name="documentText" className="w-6 h-6 text-[#72102A]" />
-                    {editingAssignment ? 'Edit Question Type Assignment' : 'Add Question Type Assignment'}
-                  </h2>
-                  <p className="text-sm text-stone-500 mt-1">
-                    {editingAssignment ? 'Modify configuration for this assignment.' : 'Structure assignment by specifying allowed question formats, subject blueprints, and mapped teachers.'}
-                  </p>
-                </div>
-
-                <form onSubmit={handleSaveQuestionTypeAssignment} className="space-y-6">
-                  {/* Responsive 2-column grid for Class / Program & Subject selection */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* 1. Select Class / Program */}
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wide mb-1.5">
-                        1. Select Class / Program
-                      </label>
-                      <select
-                        name="program"
-                        value={selectedProgram}
-                        onChange={handleProgramChange}
-                        className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
-                      >
-                        {Object.keys(PROGRAM_SUBJECT_MAP).map(prog => (
-                          <option key={prog} value={prog}>{prog}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* 2. Select Subject / Course */}
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wide mb-1.5">
-                        2. Select Subject / Course
-                      </label>
-                      <select
-                        name="subject"
-                        value={selectedSubject}
-                        onChange={(e) => setSelectedSubject(e.target.value)}
-                        className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer font-medium"
-                      >
-                        {(PROGRAM_SUBJECT_MAP[selectedProgram] || []).map(sub => (
-                          <option key={sub} value={sub}>{sub}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* 3. Loaded Exam Question Blueprint */}
-                  {currentBlueprint && (
-                    <div className="p-4 sm:p-5 rounded-2xl bg-[#FDF8E8] border border-[#C9A84C]/40 shadow-sm">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 border-b border-[#C9A84C]/20 pb-3">
-                        <div className="flex items-center gap-2.5">
-                          <span className="p-1.5 rounded-lg bg-[#C9A84C]/20 text-[#A68A3D]">
-                            <Icon name="documentText" className="w-5 h-5" />
-                          </span>
-                          <div>
-                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#A68A3D]">Exam Question Blueprint (Auto-Loaded)</span>
-                            <h4 className="text-sm font-bold text-[#1A1A1A]">{selectedSubject}</h4>
-                          </div>
-                        </div>
-                        <span className="text-xs font-bold text-[#72102A] bg-[#F5E6EA] px-3 py-1 rounded-lg border border-[#E6C4CD] self-start sm:self-auto">
-                          {currentBlueprint.totalMarks} Total Marks ({currentBlueprint.duration})
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        {currentBlueprint.sections.map((sec, idx) => (
-                          <div key={idx} className="p-3 rounded-xl bg-white border border-stone-200 text-xs flex items-center justify-between">
-                            <div>
-                              <p className="font-semibold text-[#1A1A1A]">{sec.name}</p>
-                              <p className="text-[11px] text-stone-500">{sec.count} Qs ({sec.type})</p>
-                            </div>
-                            <span className="font-mono text-xs font-bold text-[#72102A] bg-[#F5E6EA] px-2 py-0.5 rounded border border-[#E6C4CD]">
-                              {sec.marks} Marks
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 4. Mapped Teachers Button & Selection Preview */}
-                  <div>
-                    <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wide mb-2">
-                      4. Mapped Teachers
-                    </label>
-                    <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-stone-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm hover:border-stone-300 transition-all">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#F5E6EA] text-[#72102A] flex items-center justify-center border border-[#E6C4CD] flex-shrink-0">
-                          <Icon name="users" className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm text-[#1A1A1A]">
-                              {selectedTeacherIds.length} of {mappedTeachers.length} Mapped Teachers Selected
-                            </span>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F5E6EA] text-[#72102A] border border-[#E6C4CD]">
-                              Pre-selected
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className="flex -space-x-2 overflow-hidden">
-                              {teachers
-                                .filter(t => selectedTeacherIds.includes(t.id))
-                                .slice(0, 4)
-                                .map(t => (
-                                  <img
-                                    key={t.id}
-                                    src={t.avatar}
-                                    alt={t.name}
-                                    title={t.name}
-                                    className="inline-block h-6 w-6 rounded-full ring-2 ring-white object-cover"
-                                  />
-                                ))}
-                            </div>
-                            <p className="text-xs text-stone-500 truncate max-w-xs sm:max-w-md">
-                              {selectedTeacherIds.length === 0
-                                ? 'No teachers selected'
-                                : teachers
-                                    .filter(t => selectedTeacherIds.includes(t.id))
-                                    .map(t => t.name)
-                                    .join(', ')}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTeacherPickerSearch('');
-                          setTeacherPickerFilter('mapped');
-                          setIsTeacherPickerOpen(true);
-                        }}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#72102A] hover:bg-[#5C0C21] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 flex-shrink-0"
-                      >
-                        <Icon name="users" className="w-4 h-4 text-white" />
-                        <span>Select Mapped Teachers</span>
-                        <span className="bg-[#C9A84C] text-[#1A1A1A] px-2 py-0.5 rounded-full text-[10px] font-extrabold">
-                          {selectedTeacherIds.length}
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Question Types Checkboxes */}
-                  <div>
-                    <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wide mb-2">Select Question Types</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                      {['Multiple Choice (MCQ)', 'Essay', 'Short Answer', 'True / False', 'Coding Task'].map(type => (
-                        <label
-                          key={type}
-                          className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs sm:text-sm font-semibold cursor-pointer transition-all ${
-                            selectedQuestionTypes.includes(type)
-                              ? 'bg-[#F5E6EA] text-[#72102A] border-[#E6C4CD]'
-                              : 'bg-[#FAF8F5] text-stone-600 border-stone-200 hover:border-stone-300'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedQuestionTypes.includes(type)}
-                            onChange={() => toggleQuestionType(type)}
-                            className="w-4 h-4 rounded accent-[#72102A] cursor-pointer"
-                          />
-                          {type}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Question Count & Instructions Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    {/* Question Count */}
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wide mb-1.5">Total Question Count</label>
-                      <input
-                        type="number"
-                        name="questionCount"
-                        defaultValue={editingAssignment ? editingAssignment.questionCount : "15"}
-                        min="1"
-                        className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A]"
-                      />
-                    </div>
-
-                    {/* Instructions */}
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wide mb-1.5">Instructions & Guidelines</label>
-                      <textarea
-                        name="instructions"
-                        rows="3"
-                        defaultValue={editingAssignment ? editingAssignment.instructions || "" : ""}
-                        placeholder="e.g. Prepare 10 MCQs and 5 Essay questions for the upcoming midterm exam..."
-                        className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] resize-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Submit buttons */}
-                  <div className="flex items-center justify-end gap-3 pt-5 border-t border-stone-200 mt-6">
-                    <button
-                      type="button"
-                      onClick={() => setAssignmentStep('selectOption')}
-                      className="px-5 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-semibold transition-all"
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-6 py-2.5 rounded-xl bg-[#72102A] hover:bg-[#8B1F3A] text-white text-sm font-semibold transition-all shadow-md shadow-[#72102A]/20"
-                    >
-                      {editingAssignment ? 'Save Changes' : 'Create Question Type Assignment'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* STEP 2B: FORM FOR SPECIFIC QUESTION ASSIGNMENT */}
-            {assignmentStep === 'questionForm' && (
-              <div>
-                <button
-                  onClick={() => setAssignmentStep('selectOption')}
-                  className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-[#72102A] mb-4 transition-colors font-medium"
-                >
-                  <Icon name="arrowLeft" className="w-4 h-4" />
-                  Back to options
-                </button>
-
-                <div className="mb-6 pb-4 border-b border-stone-200">
-                  <h2 className="text-2xl font-bold text-[#1A1A1A] flex items-center gap-2">
-                    <Icon name="questionMarkCircle" className="w-6 h-6 text-[#A68A3D]" />
-                    {editingAssignment ? 'Edit Question Assignment' : 'Add Question Assignment'}
-                  </h2>
-                  <p className="text-sm text-stone-500 mt-1">
-                    {editingAssignment ? 'Modify assigned questions, marks, or target teacher.' : 'Select specific questions from the bank and assign them directly to a teacher.'}
-                  </p>
-                </div>
-
-                <form onSubmit={handleSaveQuestionAssignment} className="space-y-6">
-                  {/* Grid for Program & Subject */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* 1. Select Class / Program */}
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wide mb-1.5">
-                        1. Select Class / Program
-                      </label>
-                      <select
-                        name="program"
-                        value={selectedProgram}
-                        onChange={handleProgramChange}
-                        className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
-                      >
-                        {Object.keys(PROGRAM_SUBJECT_MAP).map(prog => (
-                          <option key={prog} value={prog}>{prog}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* 2. Select Subject / Course */}
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wide mb-1.5">
-                        2. Select Subject / Course
-                      </label>
-                      <select
-                        name="subject"
-                        value={selectedSubject}
-                        onChange={(e) => setSelectedSubject(e.target.value)}
-                        className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer font-medium"
-                      >
-                        {(PROGRAM_SUBJECT_MAP[selectedProgram] || []).map(sub => (
-                          <option key={sub} value={sub}>{sub}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* 3. Select Teacher */}
-                  <div>
-                    <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wide mb-1.5">3. Assign To Teacher</label>
-                    <select
-                      name="teacherId"
-                      defaultValue={selectedTeacherForAssignment ? selectedTeacherForAssignment.id : teachers[0].id}
-                      className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer font-medium"
-                    >
-                      {teachers.map(t => (
-                        <option key={t.id} value={t.id}>{t.name} ({t.department} - {t.designation})</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Select Specific Questions from Question Bank */}
-                  <div>
-                    <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wide mb-2">
-                      Select Questions from Question Bank ({selectedQuestionIds.length} selected)
-                    </label>
-                    <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
-                      {QUESTION_BANK_ITEMS.map(q => (
-                        <label
-                          key={q.id}
-                          className={`flex items-start gap-3 p-3.5 rounded-xl border text-xs sm:text-sm cursor-pointer transition-all ${
-                            selectedQuestionIds.includes(q.id)
-                              ? 'bg-[#FDF8E8] text-stone-900 border-[#C9A84C]/50 shadow-xs'
-                              : 'bg-[#FAF8F5] text-stone-600 border-stone-200 hover:border-stone-300'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedQuestionIds.includes(q.id)}
-                            onChange={() => toggleQuestionId(q.id)}
-                            className="w-4 h-4 rounded accent-[#A68A3D] cursor-pointer mt-0.5 flex-shrink-0"
-                          />
-                          <div>
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <span className="font-mono font-bold text-[#72102A] text-xs">{q.id}</span>
-                              <span className="text-[10px] bg-white border border-stone-200 text-stone-600 px-2 py-0.5 rounded font-semibold">
-                                {q.type}
-                              </span>
-                            </div>
-                            <p className="text-[#1A1A1A] font-semibold">{q.title}</p>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Marks & Evaluation Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    {/* Total Marks */}
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wide mb-1.5">Total Assigned Marks</label>
-                      <input
-                        type="number"
-                        name="totalMarks"
-                        defaultValue={editingAssignment ? editingAssignment.totalMarks : "50"}
-                        className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A]"
-                      />
-                    </div>
-
-                    {/* Instructions */}
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wide mb-1.5">Evaluation Instructions</label>
-                      <textarea
-                        name="instructions"
-                        rows="2"
-                        defaultValue={editingAssignment ? editingAssignment.instructions || "" : ""}
-                        placeholder="e.g. Please review student solution submissions for these questions..."
-                        className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] resize-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Submit buttons */}
-                  <div className="flex items-center justify-end gap-3 pt-5 border-t border-stone-200 mt-6">
-                    <button
-                      type="button"
-                      onClick={() => setAssignmentStep('selectOption')}
-                      className="px-5 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-semibold transition-all"
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-6 py-2.5 rounded-xl bg-[#72102A] hover:bg-[#8B1F3A] text-white text-sm font-semibold transition-all shadow-md shadow-[#72102A]/20"
-                    >
-                      {editingAssignment ? 'Save Changes' : 'Create Question Assignment'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-          </div>
         </div>
       )}
 

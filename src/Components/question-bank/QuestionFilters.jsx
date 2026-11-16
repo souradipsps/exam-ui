@@ -377,7 +377,7 @@ export default function QuestionFilters({
       </div>
 
       {/* Filters Row - Chain: CLASS > SUBJECT > CHAPTER > TYPES > MARKS */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
+      <div className="flex flex-wrap items-center gap-[6px]">
         <span
           style={{
             fontSize: '11px',
@@ -428,6 +428,7 @@ export default function QuestionFilters({
                   transition: 'all 0.15s',
                   boxShadow: isActive ? '0 0 0 3px rgba(114,16,42,0.08)' : 'none',
                   maxWidth: f.maxWidth || '180px',
+                  minWidth: '90px',
                   textOverflow: 'ellipsis',
                 }}
               >

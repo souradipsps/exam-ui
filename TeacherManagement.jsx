@@ -316,6 +316,16 @@ const INITIAL_ASSIGNMENTS = [
   }
 ];
 
+// Display helper: "Class 9" -> "IX"
+const toRomanClass = (cls) => {
+  const n = parseInt(String(cls).replace(/\D/g, ''), 10);
+  if (!n) return cls;
+  const map = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+  let r = '', rem = n;
+  for (const [v, s] of map) { while (rem >= v) { r += s; rem -= v; } }
+  return r;
+};
+
 const INITIAL_ACTIVITY_LOGS = [
   {
     id: "LOG-5001",
@@ -367,10 +377,10 @@ export default function TeacherManagement() {
   const [editingAssignment, setEditingAssignment] = useState(null);
 
   // Form State for Program & Subject Selection (Question Type Assignment)
-  const [selectedProgram, setSelectedProgram] = useState("B.Tech - Computer Science Engineering");
-  const [selectedSubject, setSelectedSubject] = useState("Artificial Intelligence (CS-401)");
-  const [selectedExam, setSelectedExam] = useState("Term I Exam");
-  const [selectedSession, setSelectedSession] = useState("2026-27");
+  const [selectedProgram, setSelectedProgram] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedExam, setSelectedExam] = useState("");
+  const [selectedSession, setSelectedSession] = useState("");
 
   // Form State for Question Types Assignment (Step 2A)
   const [selectedQuestionTypes, setSelectedQuestionTypes] = useState(['Multiple Choice (MCQ)', 'Essay']);
@@ -412,7 +422,7 @@ export default function TeacherManagement() {
 
   // Compute Mapped Teachers based on Program & Subject
   const mappedTeachers = useMemo(() => {
-    if (!selectedProgram) return teachers;
+    if (!selectedProgram || !selectedSubject) return [];
     const progLower = selectedProgram.toLowerCase();
 
     return teachers.filter(t => {
@@ -434,7 +444,7 @@ export default function TeacherManagement() {
       }
       return true;
     });
-  }, [teachers, selectedProgram]);
+  }, [teachers, selectedProgram, selectedSubject]);
 
   // Computed Teachers List for Picker Modal
   const pickerTeachersList = useMemo(() => {
@@ -459,12 +469,22 @@ export default function TeacherManagement() {
     }
   }, [mappedTeachers, selectedProgram, selectedSubject, editingAssignment, isAssignmentModalOpen]);
 
+  // Start every new assignment form with the details empty
+  useEffect(() => {
+    if (isAssignmentModalOpen && !editingAssignment) {
+      setSelectedExam('');
+      setSelectedSession('');
+      setSelectedProgram('');
+      setSelectedSubject('');
+    }
+  }, [isAssignmentModalOpen, assignmentStep]);
+
   // Handler when Program dropdown changes
   const handleProgramChange = (e) => {
     const prog = e.target.value;
     setSelectedProgram(prog);
     const subjects = PROGRAM_SUBJECT_MAP[prog] || [];
-    setSelectedSubject(subjects[0] || '');
+    setSelectedSubject('');
   };
 
   // Toggle individual teacher selection
@@ -900,32 +920,6 @@ export default function TeacherManagement() {
 
       {/* CONTROLS: SEARCH BAR & VIEW TABS */}
       <div className="mb-6 flex flex-col sm:flex-row sm:flex-wrap items-center justify-between gap-4">
-        {/* SEARCH INPUT */}
-        <div className="relative w-full sm:w-80">
-          <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-          <input
-            type="text"
-            placeholder={
-              activeTab === 'assignments'
-                ? "Search assignments by course, teacher, or type..."
-                : activeTab === 'teachers'
-                ? "Search teachers by name, department, or subject..."
-                : "Search activity logs..."
-            }
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl pl-10 pr-10 py-2.5 text-sm text-[#1A1A1A] placeholder-stone-400 focus:outline-none focus:border-[#72102A] focus:ring-1 focus:ring-[#72102A] transition-all"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-1"
-            >
-              <Icon name="close" className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
         {/* STATUS TABS (display only) — hidden for now, remove this comment marker and the closing one below to restore
         <div className="flex items-center gap-2 w-full sm:basis-full sm:order-last flex-wrap">
           {[
@@ -1071,6 +1065,7 @@ export default function TeacherManagement() {
                         onChange={(e) => setSelectedExam(e.target.value)}
                         className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
                       >
+                        <option value="">Select exam</option>
                         {['Term I Exam', 'Half-Yearly Exam', 'Term II Exam', 'Annual Exam'].map(ex => (
                           <option key={ex} value={ex}>{ex}</option>
                         ))}
@@ -1088,6 +1083,7 @@ export default function TeacherManagement() {
                         onChange={(e) => setSelectedSession(e.target.value)}
                         className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
                       >
+                        <option value="">Select session</option>
                         {['2025-26', '2026-27', '2027-28'].map(ses => (
                           <option key={ses} value={ses}>{ses}</option>
                         ))}
@@ -1105,6 +1101,7 @@ export default function TeacherManagement() {
                         onChange={handleProgramChange}
                         className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
                       >
+                        <option value="">Select class / program</option>
                         {Object.keys(PROGRAM_SUBJECT_MAP).map(prog => (
                           <option key={prog} value={prog}>{prog}</option>
                         ))}
@@ -1122,6 +1119,7 @@ export default function TeacherManagement() {
                         onChange={(e) => setSelectedSubject(e.target.value)}
                         className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer font-medium"
                       >
+                        <option value="">Select subject / course</option>
                         {(PROGRAM_SUBJECT_MAP[selectedProgram] || []).map(sub => (
                           <option key={sub} value={sub}>{sub}</option>
                         ))}
@@ -1165,6 +1163,7 @@ export default function TeacherManagement() {
                   */}
 
                   {/* 4. Mapped Teachers Button & Selection Preview */}
+                  {selectedProgram && selectedSubject && (
                   <div>
                     <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-2">
                       5. Mapped Teachers
@@ -1210,6 +1209,7 @@ export default function TeacherManagement() {
                       })}
                     </div>
                   </div>
+                  )}
 
                   {/* Instructions Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -1266,6 +1266,7 @@ export default function TeacherManagement() {
                         onChange={(e) => setSelectedExam(e.target.value)}
                         className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
                       >
+                        <option value="">Select exam</option>
                         {['Term I Exam', 'Half-Yearly Exam', 'Term II Exam', 'Annual Exam'].map(ex => (
                           <option key={ex} value={ex}>{ex}</option>
                         ))}
@@ -1283,6 +1284,7 @@ export default function TeacherManagement() {
                         onChange={(e) => setSelectedSession(e.target.value)}
                         className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
                       >
+                        <option value="">Select session</option>
                         {['2025-26', '2026-27', '2027-28'].map(ses => (
                           <option key={ses} value={ses}>{ses}</option>
                         ))}
@@ -1300,6 +1302,7 @@ export default function TeacherManagement() {
                         onChange={handleProgramChange}
                         className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
                       >
+                        <option value="">Select class / program</option>
                         {Object.keys(PROGRAM_SUBJECT_MAP).map(prog => (
                           <option key={prog} value={prog}>{prog}</option>
                         ))}
@@ -1317,6 +1320,7 @@ export default function TeacherManagement() {
                         onChange={(e) => setSelectedSubject(e.target.value)}
                         className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer font-medium"
                       >
+                        <option value="">Select subject / course</option>
                         {(PROGRAM_SUBJECT_MAP[selectedProgram] || []).map(sub => (
                           <option key={sub} value={sub}>{sub}</option>
                         ))}
@@ -1325,6 +1329,7 @@ export default function TeacherManagement() {
                   </div>
 
                   {/* 3. Select Teacher */}
+                  {selectedProgram && selectedSubject && (
                   <div>
                     <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-2">5. Mapped Teachers</label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
@@ -1366,6 +1371,22 @@ export default function TeacherManagement() {
                           </label>
                         );
                       })}
+                    </div>
+                  </div>
+                  )}
+
+                  {/* Instructions Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    {/* Instructions */}
+                    <div className="md:col-span-3">
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">Instructions & Guidelines</label>
+                      <textarea
+                        name="instructions"
+                        rows="3"
+                        defaultValue={editingAssignment ? editingAssignment.instructions || "" : ""}
+                        placeholder="e.g. Prepare 10 MCQs and 5 Essay questions for the upcoming midterm exam..."
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] resize-none"
+                      />
                     </div>
                   </div>
 
@@ -1551,7 +1572,7 @@ export default function TeacherManagement() {
                 <Icon name="filter" className="w-5 h-5" />
               </span>
               <div>
-                <h3 className="text-sm font-bold text-[#1A1A1A] flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[#1A1A1A] flex flex-col items-start gap-1">
                   Filter Faculty Directory
                   {(teacherDeptFilter !== 'All' || teacherDesignationFilter !== 'All' || teacherSubjectFilter !== 'All' || teacherClassFilter !== 'All' || teacherSectionFilter !== 'All') && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#72102A] text-white">
@@ -1559,9 +1580,34 @@ export default function TeacherManagement() {
                     </span>
                   )}
                 </h3>
-                <p className="text-xs text-stone-500">Filter teachers by department, designation, or subject taught</p>
               </div>
             </div>
+
+          {/* SEARCH INPUT */}
+          <div className="relative w-full md:w-56 shrink-0 md:self-end">
+            <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+            <input
+              type="text"
+              placeholder={
+                activeTab === 'assignments'
+                  ? "Search assignments by course, teacher, or type..."
+                  : activeTab === 'teachers'
+                  ? "Educators/Department"
+                  : "Search activity logs..."
+              }
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl pl-10 pr-10 py-1.5 text-xs text-[#1A1A1A] placeholder-stone-400 focus:outline-none focus:border-[#72102A] focus:ring-1 focus:ring-[#72102A] transition-all"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-1"
+              >
+                <Icon name="close" className="w-4 h-4" />
+              </button>
+            )}
+          </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 flex-1 max-w-4xl">
               {/* Department Filter */}
@@ -1615,7 +1661,7 @@ export default function TeacherManagement() {
                   className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
                 >
                   {uniqueTeacherClasses.map(cls => (
-                    <option key={cls} value={cls}>{cls === 'All' ? 'All Classes' : cls}</option>
+                    <option key={cls} value={cls}>{cls === 'All' ? 'All Classes' : toRomanClass(cls)}</option>
                   ))}
                 </select>
               </div>
@@ -1635,20 +1681,20 @@ export default function TeacherManagement() {
               </div>
             </div>
 
-            {(teacherDeptFilter !== 'All' || teacherDesignationFilter !== 'All' || teacherSubjectFilter !== 'All' || teacherClassFilter !== 'All' || teacherSectionFilter !== 'All') && (
-              <button
-                onClick={() => {
-                  setTeacherDeptFilter('All');
-                  setTeacherDesignationFilter('All');
-                  setTeacherSubjectFilter('All');
-                  setTeacherClassFilter('All');
-                  setTeacherSectionFilter('All');
-                }}
-                className="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-all shrink-0 self-end md:self-center"
-              >
-                Clear Filters
-              </button>
-            )}
+            <button
+              onClick={() => {
+                setTeacherDeptFilter('All');
+                setTeacherDesignationFilter('All');
+                setTeacherSubjectFilter('All');
+                setTeacherClassFilter('All');
+                setTeacherSectionFilter('All');
+              }}
+              className={`px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-all shrink-0 self-end md:self-center focus:outline-none focus:ring-1 focus:ring-[#72102A] ${
+                (teacherDeptFilter !== 'All' || teacherDesignationFilter !== 'All' || teacherSubjectFilter !== 'All' || teacherClassFilter !== 'All' || teacherSectionFilter !== 'All') ? '' : 'invisible'
+              }`}
+            >
+              Clear Filters
+            </button>
           </div>
 
           {filteredTeachers.length === 0 ? (
@@ -1708,7 +1754,7 @@ export default function TeacherManagement() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 mb-0.5">Assigned Classes</p>
-                        <p className="text-stone-700">{(teacher.classes || []).join(', ')}</p>
+                        <p className="text-stone-700">{(teacher.classes || []).map(toRomanClass).join(', ')}</p>
                       </div>
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 mb-0.5">Assigned Sections</p>
@@ -1760,7 +1806,7 @@ export default function TeacherManagement() {
                           ))}
                         </div>
                       </td>
-                      <td className="border border-stone-300 px-4 py-3 text-stone-700">{(teacher.classes || []).join(', ')}</td>
+                      <td className="border border-stone-300 px-4 py-3 text-stone-700">{(teacher.classes || []).map(toRomanClass).join(', ')}</td>
                       <td className="border border-stone-300 px-4 py-3 text-stone-700">{(teacher.sections || []).join(', ')}</td>
                       <td className="border border-stone-300 px-4 py-3">
                         {(() => {

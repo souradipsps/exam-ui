@@ -1,15 +1,17 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import TopBar from './layout/TopBar.jsx';
-import Sidebar from './layout/Sidebar.jsx';
-import ComingSoonPlaceholder from './layout/ComingSoonPlaceholder.jsx';
-import QuestionFilters from './question-bank/QuestionFilters.jsx';
-import Pagination from './question-bank/Pagination.jsx';
-import QuestionTable from './question-bank/QuestionTable.jsx';
-import QuestionDetailsModal from './modals/QuestionDetailsModal.jsx';
-import QuestionEditModal from './modals/QuestionEditModal.jsx';
-import QuestionHistoryModal from './modals/QuestionHistoryModal.jsx';
-import QuestionDeleteModal from './modals/QuestionDeleteModal.jsx';
-import Icon from './common/Icon.jsx';
+import TopBar from '../Components/layout/TopBar.jsx';
+import Sidebar from '../Components/layout/Sidebar.jsx';
+import ComingSoonPlaceholder from '../Components/layout/ComingSoonPlaceholder.jsx';
+import QuestionFilters from '../Components/question-bank/QuestionFilters.jsx';
+import Pagination from '../Components/question-bank/Pagination.jsx';
+import QuestionTable from '../Components/question-bank/QuestionTable.jsx';
+import QuestionCards from '../Components/question-bank/QuestionCards.jsx';
+import ViewToggle from '../Components/question-bank/ViewToggle.jsx';
+import QuestionDetailsModal from '../Components/modals/QuestionDetailsModal.jsx';
+import QuestionEditModal from '../Components/modals/QuestionEditModal.jsx';
+import QuestionHistoryModal from '../Components/modals/QuestionHistoryModal.jsx';
+import QuestionDeleteModal from '../Components/modals/QuestionDeleteModal.jsx';
+import Icon from '../Components/common/Icon.jsx';
 import { INITIAL_QUESTIONS } from '../data/mockQuestions.js';
 import { NAV_ITEMS } from '../data/navigation.js';
 import TeacherManagement from './TeacherManagement.jsx';
@@ -27,11 +29,13 @@ export default function QuestionBank() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'grid'
 
   const [modal, setModal] = useState(null); // 'details' | 'edit' | 'history' | 'delete'
   const [current, setCurrent] = useState(null);
   const [toast, setToast] = useState(null);
   const [editForm, setEditForm] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navButtonRefs = useRef([]);
 
@@ -91,6 +95,16 @@ export default function QuestionBank() {
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
+
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
   const filtered = useMemo(() => {
     return questions.filter((q) => {
@@ -176,7 +190,7 @@ export default function QuestionBank() {
       }}
     >
       {/* Top Bar Header */}
-      <TopBar />
+      <TopBar onMenuToggle={() => setSidebarOpen((o) => !o)} menuOpen={sidebarOpen} />
 
       {/* Main Body */}
       <div style={{ display: 'flex', flex: '1 1 0%', minHeight: '0px', overflow: 'hidden' }}>
@@ -186,6 +200,8 @@ export default function QuestionBank() {
           setActiveNav={setActiveNav}
           navButtonRefs={navButtonRefs}
           handleNavKeyDown={handleNavKeyDown}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
 
         {/* Content Area */}
@@ -198,20 +214,16 @@ export default function QuestionBank() {
             display: 'flex',
             flexDirection: 'column',
             minHeight: '0px',
-            overflow: 'hidden',
-            padding: '20px 32px',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            padding: '0',
             outline: 'none',
             background: activeNav === 'teacherManagement' ? '#ffffff' : undefined,
           }}
         >
           <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              flex: '1 1 0%',
-              minHeight: '0px',
-              gap: '14px',
-            }}
+            className="flex flex-col gap-[14px] p-4 sm:p-6 lg:p-8"
+            style={{ paddingTop: '20px' }}
           >
             {/* Toast Notification */}
             {toast && (
@@ -229,13 +241,13 @@ export default function QuestionBank() {
                   <h1
                     style={{
                       fontFamily: "'Outfit', 'Inter', system-ui, sans-serif",
-                      fontSize: '22px',
                       fontWeight: 800,
                       color: '#111827',
                       lineHeight: 1.2,
                       letterSpacing: '-0.02em',
                       margin: 0,
                     }}
+                    className="text-[18px] md:text-[22px]"
                   >
                     Question Bank
                   </h1>
@@ -253,7 +265,7 @@ export default function QuestionBank() {
                 </div>
 
                 {/* ── Summary Cards (4 Compact Cards: Questions, Subjects, Types, Last Updated) ── */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {[
                     {
                       label: 'Questions',
@@ -320,12 +332,25 @@ export default function QuestionBank() {
                   />
                 </div>
 
-                {/* Questions Display — Table only with paginated subset */}
-                <QuestionTable
-                  questions={paginatedQuestions}
-                  onOpenModal={openModal}
-                  onOpenEdit={handleOpenEdit}
-                />
+                {/* View switcher */}
+                <div className="flex-shrink-0 flex justify-end">
+                  <ViewToggle view={viewMode} onChange={setViewMode} />
+                </div>
+
+                {/* Questions Display — list or card view */}
+                {viewMode === 'grid' ? (
+                  <QuestionCards
+                    questions={paginatedQuestions}
+                    onOpenModal={openModal}
+                    onOpenEdit={handleOpenEdit}
+                  />
+                ) : (
+                  <QuestionTable
+                    questions={paginatedQuestions}
+                    onOpenModal={openModal}
+                    onOpenEdit={handleOpenEdit}
+                  />
+                )}
 
                 {/* Bottom Full-Featured Pagination Bar */}
                 {filtered.length > 0 && (

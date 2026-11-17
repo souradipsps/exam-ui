@@ -1,5 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import Icon from '../Components/teacher-management/TeacherIcon.jsx';
+import {
+  PROGRAM_SUBJECT_MAP,
+  DEFAULT_BLUEPRINT,
+  SUBJECT_BLUEPRINTS,
+  INITIAL_TEACHERS,
+  QUESTION_BANK_ITEMS,
+  INITIAL_ASSIGNMENTS,
+  INITIAL_ACTIVITY_LOGS,
+} from '../data/teacherData.js';
 
+<<<<<<< HEAD:TeacherManagement.jsx
 // ==========================================
 // SVG ICONS (Self-contained, zero-dependency)
 // ==========================================
@@ -359,6 +370,8 @@ const INITIAL_ACTIVITY_LOGS = [
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
+=======
+>>>>>>> origin/main:src/pages/TeacherManagement.jsx
 export default function TeacherManagement() {
   const [teachers] = useState(INITIAL_TEACHERS);
   const [assignments, setAssignments] = useState(INITIAL_ASSIGNMENTS);

@@ -16,8 +16,8 @@ export default function QuestionCards({ questions, onOpenModal, onOpenEdit }) {
   };
 
   return (
-    <div className="flex-1 min-h-0 overflow-auto custom-scrollbar">
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 pb-1">
+    <div className="w-full">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 pb-1">
         {questions.map((q) => {
           const badge = TYPE_BADGES[q.type];
           return (

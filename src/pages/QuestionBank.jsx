@@ -35,6 +35,7 @@ export default function QuestionBank() {
   const [current, setCurrent] = useState(null);
   const [toast, setToast] = useState(null);
   const [editForm, setEditForm] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navButtonRefs = useRef([]);
 
@@ -94,6 +95,16 @@ export default function QuestionBank() {
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
+
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
   const filtered = useMemo(() => {
     return questions.filter((q) => {
@@ -179,7 +190,7 @@ export default function QuestionBank() {
       }}
     >
       {/* Top Bar Header */}
-      <TopBar />
+      <TopBar onMenuToggle={() => setSidebarOpen((o) => !o)} menuOpen={sidebarOpen} />
 
       {/* Main Body */}
       <div style={{ display: 'flex', flex: '1 1 0%', minHeight: '0px', overflow: 'hidden' }}>
@@ -189,6 +200,8 @@ export default function QuestionBank() {
           setActiveNav={setActiveNav}
           navButtonRefs={navButtonRefs}
           handleNavKeyDown={handleNavKeyDown}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
 
         {/* Content Area */}
@@ -209,12 +222,8 @@ export default function QuestionBank() {
           }}
         >
           <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '14px',
-              padding: '20px 32px 20px 32px',
-            }}
+            className="flex flex-col gap-[14px] p-4 sm:p-6 lg:p-8"
+            style={{ paddingTop: '20px' }}
           >
             {/* Toast Notification */}
             {toast && (
@@ -232,13 +241,13 @@ export default function QuestionBank() {
                   <h1
                     style={{
                       fontFamily: "'Outfit', 'Inter', system-ui, sans-serif",
-                      fontSize: '22px',
                       fontWeight: 800,
                       color: '#111827',
                       lineHeight: 1.2,
                       letterSpacing: '-0.02em',
                       margin: 0,
                     }}
+                    className="text-[18px] md:text-[22px]"
                   >
                     Question Bank
                   </h1>
@@ -256,7 +265,7 @@ export default function QuestionBank() {
                 </div>
 
                 {/* ── Summary Cards (4 Compact Cards: Questions, Subjects, Types, Last Updated) ── */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {[
                     {
                       label: 'Questions',

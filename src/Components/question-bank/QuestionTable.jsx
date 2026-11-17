@@ -207,7 +207,8 @@ export default function QuestionTable({ questions, onOpenModal, onOpenEdit }) {
       className="bg-white rounded-xl border shadow-sm overflow-hidden"
       style={{ borderColor: '#E8E2D9' }}
     >
-      <div className="overflow-x-auto custom-scrollbar">
+      {/* ── Desktop table (hidden on mobile) ── */}
+      <div className="hidden md:block overflow-x-auto custom-scrollbar">
         <table className="w-full text-left text-xs border-collapse">
           <thead className="sticky top-0 z-10">
             <tr className="text-gray-500 uppercase tracking-wide text-[11px]">
@@ -299,6 +300,76 @@ export default function QuestionTable({ questions, onOpenModal, onOpenEdit }) {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* ── Mobile card stack (visible only on mobile) ── */}
+      <div className="md:hidden divide-y divide-gray-100">
+        {questions.map((q) => (
+          <div
+            key={q.id}
+            className="p-4 hover:bg-[#fdf5f6] transition-colors cursor-pointer"
+            onClick={() => onOpenModal('details', q)}
+          >
+            {/* Top row: ID + Type badge */}
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="font-mono font-bold text-xs text-gray-700">{q.id}</span>
+              <span className="px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200 text-[11px] font-semibold text-gray-600">
+                {TYPE_BADGES[q.type]?.label || q.type}
+              </span>
+            </div>
+
+            {/* Meta row: subject · class · marks */}
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-500 mb-2">
+              <span className="font-semibold text-gray-800">{q.subject}</span>
+              <span>{q.class || q.grade || '—'}</span>
+              <span className="line-clamp-1 max-w-[160px]" title={q.chapter}>{q.chapter}</span>
+              <span><strong className="text-gray-700">{q.marks}</strong> {q.marks === 1 ? 'mark' : 'marks'}</span>
+              <span>{q.history?.length ?? 0} edits</span>
+            </div>
+
+            {/* Question text */}
+            <p className="text-xs text-gray-700 line-clamp-2 mb-3">{q.questionText}</p>
+
+            {/* Action buttons */}
+            <div
+              className="flex items-center gap-2 flex-wrap pt-2 border-t border-gray-100"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => onOpenEdit(q)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-amber-700 border border-amber-200 bg-amber-50/40 hover:bg-amber-100 active:scale-95 transition-all text-[11px] font-semibold"
+                title="Edit Question"
+              >
+                <Icon name="edit" className="w-3 h-3" />
+                Edit
+              </button>
+              <button
+                onClick={() => onOpenModal('history', q)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-teal-700 border border-teal-200 bg-teal-50/40 hover:bg-teal-100 active:scale-95 transition-all text-[11px] font-semibold"
+                title="Activity History"
+              >
+                <Icon name="history" className="w-3 h-3" />
+                History
+              </button>
+              <button
+                onClick={() => onOpenModal('delete', q)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-red-600 border border-red-200 bg-red-50/40 hover:bg-red-100 active:scale-95 transition-all text-[11px] font-semibold"
+                title="Delete Question"
+              >
+                <Icon name="trash" className="w-3 h-3" />
+                Delete
+              </button>
+              <button
+                onClick={() => onOpenModal('details', q)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[#72102a] border border-[#72102a]/30 bg-[#72102a]/5 hover:bg-[#72102a]/15 active:scale-95 transition-all text-[11px] font-semibold"
+                title="View Details"
+              >
+                <Icon name="eye" className="w-3 h-3" />
+                View
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

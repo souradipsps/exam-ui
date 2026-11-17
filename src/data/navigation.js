@@ -15,7 +15,7 @@ export const COMING_SOON_PAGES = {
   },
   examBlueprint: {
     icon: 'clipboard',
-    label: 'Exam Question Blueprint',
+    label: 'Blueprint',
     desc: 'Design and manage structured blueprints for exam papers by subject and class.',
   },
   questionCreation: {

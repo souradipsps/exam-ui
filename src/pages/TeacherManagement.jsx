@@ -55,7 +55,7 @@ export default function TeacherManagement() {
     }, 3500);
   };
 
-  // Compute Exam Question Blueprint for the selected subject
+  // Compute Blueprint for the selected subject
   const currentBlueprint = useMemo(() => {
     return SUBJECT_BLUEPRINTS[selectedSubject] || DEFAULT_BLUEPRINT;
   }, [selectedSubject]);
@@ -1089,7 +1089,7 @@ export default function TeacherManagement() {
                     </div>
                   </div>
 
-                  {/* 3. Loaded Exam Question Blueprint */}
+                  {/* 3. Loaded Blueprint */}
                   {currentBlueprint && (
                     <div className="p-4 sm:p-5 rounded-2xl bg-[#FDF8E8] border border-[#C9A84C]/40 shadow-sm">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 border-b border-[#C9A84C]/20 pb-3">
@@ -1098,7 +1098,7 @@ export default function TeacherManagement() {
                             <Icon name="documentText" className="w-5 h-5" />
                           </span>
                           <div>
-                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#A68A3D]">Exam Question Blueprint (Auto-Loaded)</span>
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#A68A3D]">Blueprint (Auto-Loaded)</span>
                             <h4 className="text-sm font-bold text-[#1A1A1A]">{selectedSubject}</h4>
                           </div>
                         </div>

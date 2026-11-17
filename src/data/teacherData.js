@@ -37,7 +37,7 @@ export const PROGRAM_SUBJECT_MAP = {
 };
 
 // ==========================================
-// EXAM QUESTION BLUEPRINTS (Auto-loaded per course)
+// BLUEPRINTS (Auto-loaded per course)
 // ==========================================
 export const DEFAULT_BLUEPRINT = {
   totalMarks: 100,

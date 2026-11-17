@@ -1,7 +1,7 @@
 export const NAV_ITEMS = [
   { id: 'questionBank',         label: 'Question Bank',             icon: 'book' },
-  { id: 'teacherManagement',    label: 'Teacher Management',        icon: 'users' },
-  { id: 'examBlueprint',        label: 'Blueprint',                 icon: 'clipboard' },
+  { id: 'teacherManagement',    label: 'Educator Management',       icon: 'users' },
+  { id: 'examBlueprint',        label: 'Exam Question Blueprint',   icon: 'clipboard' },
   { id: 'questionCreation',     label: 'Question Creation',         icon: 'plus' },
   { id: 'generatePaper',        label: 'Generate Question Paper',   icon: 'refresh' },
   { id: 'paperManagement',      label: 'Question Paper Management', icon: 'grid' },
@@ -10,7 +10,7 @@ export const NAV_ITEMS = [
 export const COMING_SOON_PAGES = {
   teacherManagement: {
     icon: 'users',
-    label: 'Teacher Management',
+    label: 'Educator Management',
     desc: 'Manage teacher profiles, subject assignments, and workload tracking.',
   },
   examBlueprint: {

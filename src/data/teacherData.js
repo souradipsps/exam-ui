@@ -108,7 +108,9 @@ export const INITIAL_TEACHERS = [
     designation: "Professor & HOD",
     department: "Computer Science",
     avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Artificial Intelligence", "Machine Learning", "Data Structures"]
+    subjects: ["Artificial Intelligence", "Machine Learning", "Data Structures"],
+    classes: ["Class 9", "Class 10"],
+    sections: ["A", "B"]
   },
   {
     id: "TCH-1007",
@@ -116,7 +118,9 @@ export const INITIAL_TEACHERS = [
     designation: "Associate Professor",
     department: "Computer Science",
     avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Artificial Intelligence", "Data Structures", "Web Architecture"]
+    subjects: ["Artificial Intelligence", "Data Structures", "Web Architecture"],
+    classes: ["Class 11", "Class 12"],
+    sections: ["A", "C"]
   },
   {
     id: "TCH-1002",
@@ -124,7 +128,9 @@ export const INITIAL_TEACHERS = [
     designation: "Associate Professor",
     department: "Mathematics",
     avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Linear Algebra", "Calculus III", "Discrete Math"]
+    subjects: ["Linear Algebra", "Calculus III", "Discrete Math"],
+    classes: ["Class 10", "Class 11"],
+    sections: ["B", "C"]
   },
   {
     id: "TCH-1008",
@@ -132,7 +138,9 @@ export const INITIAL_TEACHERS = [
     designation: "Assistant Professor",
     department: "Mathematics",
     avatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Linear Algebra", "Discrete Math", "Calculus III"]
+    subjects: ["Linear Algebra", "Discrete Math", "Calculus III"],
+    classes: ["Class 9", "Class 11"],
+    sections: ["A", "B"]
   },
   {
     id: "TCH-1003",
@@ -140,7 +148,9 @@ export const INITIAL_TEACHERS = [
     designation: "Assistant Professor",
     department: "Physics",
     avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Quantum Mechanics", "Electromagnetism", "Optics Lab"]
+    subjects: ["Quantum Mechanics", "Electromagnetism", "Optics Lab"],
+    classes: ["Class 11", "Class 12"],
+    sections: ["B", "D"]
   },
   {
     id: "TCH-1004",
@@ -148,7 +158,9 @@ export const INITIAL_TEACHERS = [
     designation: "Senior Lecturer",
     department: "English Literature",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Modern Poetry", "Shakespearean Studies", "Creative Writing"]
+    subjects: ["Modern Poetry", "Shakespearean Studies", "Creative Writing"],
+    classes: ["Class 8", "Class 9"],
+    sections: ["A", "C"]
   },
   {
     id: "TCH-1005",
@@ -156,7 +168,9 @@ export const INITIAL_TEACHERS = [
     designation: "Professor",
     department: "Chemistry",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    subjects: ["Organic Chemistry", "Biochemistry", "Thermodynamics"]
+    subjects: ["Organic Chemistry", "Biochemistry", "Thermodynamics"],
+    classes: ["Class 10", "Class 12"],
+    sections: ["A", "D"]
   },
   {
     id: "TCH-1006",
@@ -164,7 +178,9 @@ export const INITIAL_TEACHERS = [
     designation: "Assistant Lecturer",
     department: "Art & Design",
     avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-    subjects: ["UI/UX Design", "Digital Illustration", "Art History"]
+    subjects: ["UI/UX Design", "Digital Illustration", "Art History"],
+    classes: ["Class 6", "Class 7"],
+    sections: ["B", "C"]
   }
 ];
 

@@ -336,36 +336,6 @@ const toRomanClass = (cls) => {
   return r;
 };
 
-const INITIAL_ACTIVITY_LOGS = [
-  {
-    id: "LOG-5001",
-    teacherName: "Dr. Evelyn Vance & Prof. Alan Turing",
-    teacherAvatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-    department: "Computer Science",
-    action: "Assigned Question Type Assignment (Artificial Intelligence)",
-    details: "Program: B.Tech CSE | Course: Artificial Intelligence (CS-401) | Assigned to 2 mapped teachers (Dr. Evelyn Vance, Prof. Alan Turing).",
-    timestamp: "10 minutes ago"
-  },
-  {
-    id: "LOG-5002",
-    teacherName: "Prof. Marcus Thorne",
-    teacherAvatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
-    department: "Mathematics",
-    action: "Assigned 2 Questions from Question Bank",
-    details: "Assigned specific questions Q-103 (Eigenvalues) to review for Linear Algebra.",
-    timestamp: "35 minutes ago"
-  },
-  {
-    id: "LOG-5003",
-    teacherName: "Dr. Sarah Lin",
-    teacherAvatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
-    department: "Physics",
-    action: "Assigned Question Type Assignment (Quantum Mechanics)",
-    details: "Program: B.Sc Physics | Course: Quantum Mechanics (PH-301) | Quantum Physics Lab evaluation assignment.",
-    timestamp: "1.5 hours ago"
-  }
-];
-
 // ==========================================
 // MAIN COMPONENT
 // ==========================================

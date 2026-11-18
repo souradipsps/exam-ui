@@ -8,6 +8,8 @@ import {
   QUESTION_BANK_ITEMS,
   INITIAL_ASSIGNMENTS,
   INITIAL_ACTIVITY_LOGS,
+  getSubjectBaseName,
+  getSubjectChapters,
 } from '../data/teacherData.js';
 
 // Black dropdown arrow (stays black even when the text is grey)
@@ -39,6 +41,136 @@ const ChaptersMultiSelect = ({ options, selected, onChange }) => {
         {options.map(opt => (
           <label key={opt} className="flex items-center gap-2 px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F5E6EA] cursor-pointer">
             <input type="checkbox" name="chapters" value={opt} checked={selected.includes(opt)} onChange={() => toggle(opt)} className="w-4 h-4 accent-[#72102A]" />
+            {opt}
+          </label>
+        ))}
+      </div>
+    </details>
+  );
+};
+
+// Single-select dropdown that always opens downward (used for "Class / Program")
+const ProgramSelect = ({ options, value, onChange }) => {
+  const detailsRef = React.useRef(null);
+  // Close the list when the user clicks anywhere outside it
+  useEffect(() => {
+    const handleOutside = (e) => {
+      if (detailsRef.current && !detailsRef.current.contains(e.target)) detailsRef.current.open = false;
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, []);
+  return (
+    <details ref={detailsRef} className="relative group">
+      <summary
+        className={`relative list-none w-full appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[length:1rem] bg-white border border-stone-300 rounded-md px-3 py-2 text-sm group-open:border-[#72102A] cursor-pointer truncate ${value ? 'text-[#1A1A1A]' : 'text-stone-400'}`}
+        style={{ backgroundImage: SELECT_ARROW }}
+      >
+        {value || 'Select class / program'}
+        <input required name="program" value={value} onChange={() => {}} tabIndex={-1} aria-hidden="true" className="absolute inset-0 w-full h-full opacity-0 pointer-events-none" />
+      </summary>
+      <div className="absolute z-20 mt-0.5 w-full max-h-48 overflow-y-auto bg-white border border-stone-500">
+        <button
+          type="button"
+          onClick={() => { onChange({ target: { value: '' } }); detailsRef.current.open = false; }}
+          className={`block w-full text-left px-3 py-0.5 text-sm text-[#1A1A1A] hover:bg-[#1A6ADB] hover:text-white cursor-pointer ${!value ? 'bg-[#1A6ADB] text-white' : ''}`}
+        >
+          Select class / program
+        </button>
+        {options.map(opt => (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => { onChange({ target: { value: opt } }); detailsRef.current.open = false; }}
+            className={`block w-full text-left px-3 py-0.5 text-sm text-[#1A1A1A] hover:bg-[#1A6ADB] hover:text-white cursor-pointer ${value === opt ? 'bg-[#1A6ADB] text-white' : ''}`}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    </details>
+  );
+};
+
+// "Subject & Chapter Mapping" panel: one column per selected subject, chapter names shown on "See Chapters"
+const ChapterMapping = ({ subjects, gold }) => {
+  const [showChapters, setShowChapters] = useState(false);
+  const t = gold
+    ? { panel: '#FDF8E8', panelBorder: 'rgba(201,168,76,0.5)', border: '#C9A84C', pillBg: 'rgba(201,168,76,0.25)', pillText: '#A68A3D' }
+    : { panel: '#F5E6EA', panelBorder: '#E6C4CD', border: '#72102A', pillBg: '#E6C4CD', pillText: '#72102A' };
+  const cols = { gridTemplateColumns: `repeat(${subjects.length}, minmax(150px, 1fr))` };
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: '#FFFFFF' }}>
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div>
+          <h4 className="text-base font-bold text-[#1A1A1A] leading-tight">Subject & Chapter Mapping</h4>
+          <p className="text-xs text-stone-600">Review the chapters mapped for each selected subject.</p>
+        </div>
+      </div>
+      <div className="flex flex-col md:flex-row md:items-center gap-4 p-4">
+        <div className="flex-1 overflow-x-auto">
+          <div className="rounded-xl border border-stone-200 bg-white overflow-hidden min-w-max md:min-w-0">
+            <div className="grid" style={cols}>
+              {subjects.map((sub, i) => (
+                <div key={sub} className={`px-4 py-3 text-left bg-[#FAF8F5] ${i ? 'border-l border-stone-200' : ''}`}>
+                  <p className="text-[11px] font-semibold text-stone-600 uppercase tracking-wide">{getSubjectBaseName(sub)}</p>
+                  <span className="inline-block mt-1.5 text-xs font-bold px-3 py-0.5 rounded-full" style={{ backgroundColor: t.pillBg, color: t.pillText }}>
+                    {getSubjectChapters(sub).length} Chapters
+                  </span>
+                </div>
+              ))}
+            </div>
+            {showChapters && (
+              <div className="grid border-t border-stone-200" style={cols}>
+                {subjects.map((sub, i) => (
+                  <div key={sub} className={`px-4 py-3 space-y-1.5 text-xs text-stone-600 ${i ? 'border-l border-stone-200' : ''}`}>
+                    {getSubjectChapters(sub).map((name, idx) => (
+                      <p key={name}>Chapter {idx + 1} : {name}</p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowChapters(prev => !prev)}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-[#72102A] bg-white text-[#72102A] text-sm font-semibold hover:bg-[#F5E6EA] whitespace-nowrap self-start md:ml-auto"
+        >
+          {showChapters ? 'Hide Chapters' : 'See Chapters'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Multi-select dropdown styled like the Chapters list (used for "Subject / Course")
+const SubjectSelect = ({ options, selected, onChange }) => {
+  const toggle = (opt) => onChange(selected.includes(opt) ? selected.filter(o => o !== opt) : [...selected, opt]);
+  const detailsRef = React.useRef(null);
+  // Close the list when the user clicks anywhere outside it
+  useEffect(() => {
+    const handleOutside = (e) => {
+      if (detailsRef.current && !detailsRef.current.contains(e.target)) detailsRef.current.open = false;
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, []);
+  return (
+    <details ref={detailsRef} className="relative group">
+      <summary
+        className={`relative list-none w-full appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[length:1rem] bg-white border border-stone-300 rounded-md px-3 py-2 text-sm font-medium group-open:border-[#72102A] cursor-pointer truncate ${selected.length ? 'text-[#1A1A1A]' : 'text-stone-400'}`}
+        style={{ backgroundImage: SELECT_ARROW }}
+      >
+        {selected.length ? selected.join(', ') : 'Select subject / course'}
+        <input required name="subject" value={selected.join(', ')} onChange={() => {}} tabIndex={-1} aria-hidden="true" className="absolute inset-0 w-full h-full opacity-0 pointer-events-none" />
+      </summary>
+      <div className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-stone-300 rounded-md shadow-lg">
+        {options.length === 0 && <p className="px-3 py-2 text-sm text-stone-400">Select class / program first</p>}
+        {options.map(opt => (
+          <label key={opt} className="flex items-center gap-2 px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F5E6EA] cursor-pointer">
+            <input type="checkbox" value={opt} checked={selected.includes(opt)} onChange={() => toggle(opt)} className="w-4 h-4 accent-[#72102A]" />
             {opt}
           </label>
         ))}
@@ -87,7 +219,7 @@ const syncInstructions = ({ text, removed }, fields) => {
       nextRemoved.splice(nextRemoved.indexOf(key), 1);
     }
   });
-  return { text: lines.join('\n'), removed: nextRemoved };
+  return { text: lines.join('\n'), removed: nextRemoved, def: INSTRUCTION_KEYS.flatMap(k => items[k]).join('\n') };
 };
 
 // Display helper: "Class 9" -> "IX"
@@ -109,7 +241,8 @@ export default function TeacherManagement() {
   const [activityLogs, setActivityLogs] = useState(INITIAL_ACTIVITY_LOGS);
   const [selectedChapters, setSelectedChapters] = useState([]);
   const [selectedDueDate, setSelectedDueDate] = useState('');
-  const [instr, setInstr] = useState({ text: '', removed: INSTRUCTION_KEYS });
+  const instructionsRef = React.useRef(null);
+  const [instr, setInstr] = useState({ text: '', removed: INSTRUCTION_KEYS, def: '' });
   
   // Search & Active Tab State
   const [searchTerm, setSearchTerm] = useState('');
@@ -125,7 +258,10 @@ export default function TeacherManagement() {
 
   // Form State for Program & Subject Selection (Question Type Assignment)
   const [selectedProgram, setSelectedProgram] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedSubjects, setSelectedSubjects] = useState([]);
+  // Subject / Course is multi-select; the rest of the form reads it as one joined string
+  const selectedSubject = selectedSubjects.join(', ');
+  const setSelectedSubject = (v) => setSelectedSubjects(Array.isArray(v) ? v : (v ? v.split(', ') : []));
   const [selectedExam, setSelectedExam] = useState("");
   const [selectedSession, setSelectedSession] = useState("");
 
@@ -172,7 +308,7 @@ export default function TeacherManagement() {
     if (!selectedProgram || !selectedSubject) return [];
     const progLower = selectedProgram.toLowerCase();
 
-    return teachers.filter(t => {
+    const deptTeachers = teachers.filter(t => {
       const deptLower = t.department.toLowerCase();
       if (progLower.includes('computer science') || progLower.includes('technology')) {
         return deptLower.includes('computer') || deptLower.includes('technology');
@@ -191,6 +327,15 @@ export default function TeacherManagement() {
       }
       return true;
     });
+
+    // With several subjects selected, map every teacher who teaches any of them
+    const subjectTeachers = deptTeachers.filter(t => (t.subjects || []).some(ts =>
+      selectedSubject.split(', ').some(sel => {
+        const base = sel.replace(/\s*\(.*\)\s*$/, '').toLowerCase();
+        return base.includes(ts.toLowerCase()) || ts.toLowerCase().includes(base);
+      })
+    ));
+    return subjectTeachers.length ? subjectTeachers : deptTeachers;
   }, [teachers, selectedProgram, selectedSubject]);
 
   // Computed Teachers List for Picker Modal
@@ -223,8 +368,10 @@ export default function TeacherManagement() {
     }
   }, [selectedExam, selectedSession, selectedProgram, selectedSubject, selectedChapters, selectedDueDate]);
 
-  // Chapters depend on the subject, so clear them when the subject changes
-  useEffect(() => { setSelectedChapters([]); }, [selectedSubject]);
+  // Chapters depend on the subject: pre-select all lesson-plan chapters when the subject changes
+  useEffect(() => {
+    setSelectedChapters(selectedSubjects.flatMap(sub => getSubjectChapters(sub).map((name, idx) => `${getSubjectBaseName(sub)} - Chapter ${idx + 1} : ${name}`)));
+  }, [selectedSubject]);
 
   // Start every new assignment form with the details empty
   useEffect(() => {
@@ -235,11 +382,20 @@ export default function TeacherManagement() {
       setSelectedSubject('');
       setSelectedChapters([]);
       setSelectedDueDate('');
-      setInstr({ text: '', removed: INSTRUCTION_KEYS });
+      setInstr({ text: '', removed: INSTRUCTION_KEYS, def: '' });
     } else if (isAssignmentModalOpen && editingAssignment) {
-      setInstr({ text: editingAssignment.instructions || '', removed: [] });
+      setInstr({ text: editingAssignment.instructions || '', removed: [], def: editingAssignment.instructions || '' });
     }
   }, [isAssignmentModalOpen, assignmentStep]);
+
+  // Grow the instructions box with its text (the Due Date box stretches to match it)
+  useEffect(() => {
+    const el = instructionsRef.current;
+    if (el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
+  }, [instr.text, assignmentStep]);
+
+  // True when the user changed the text away from the last auto-generated default
+  const isInstructionsEdited = instr.text !== instr.def;
 
   // Regenerate the default instructions from the current selections
   const handleResetInstructions = () => {
@@ -248,6 +404,7 @@ export default function TeacherManagement() {
     setInstr({
       text: INSTRUCTION_KEYS.flatMap(k => items[k]).join('\n'),
       removed: INSTRUCTION_KEYS.filter(k => !items[k].length),
+      def: INSTRUCTION_KEYS.flatMap(k => items[k]).join('\n'),
     });
   };
 
@@ -841,7 +998,7 @@ export default function TeacherManagement() {
                       >
                         <option value="">Select exam</option>
                         {['Term I Exam', 'Half-Yearly Exam', 'Term II Exam', 'Annual Exam'].map(ex => (
-                          <option key={ex} value={ex}>{ex}</option>
+                          <option key={ex} className="text-[#1A1A1A]" value={ex}>{ex}</option>
                         ))}
                       </select>
                     </div>
@@ -861,7 +1018,7 @@ export default function TeacherManagement() {
                       >
                         <option value="">Select session</option>
                         {['2025-26', '2026-27', '2027-28'].map(ses => (
-                          <option key={ses} value={ses}>{ses}</option>
+                          <option key={ses} className="text-[#1A1A1A]" value={ses}>{ses}</option>
                         ))}
                       </select>
                     </div>
@@ -871,19 +1028,7 @@ export default function TeacherManagement() {
                       <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
                         3. Select Class / Program
                       </label>
-                      <select
-                        name="program"
-                        required
-                        value={selectedProgram}
-                        onChange={handleProgramChange}
-                        className={`w-full appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[length:1rem] bg-white border border-stone-300 rounded-md px-3 py-2 text-sm ${selectedProgram ? 'text-[#1A1A1A]' : 'text-stone-400'} focus:outline-none focus:border-[#72102A] cursor-pointer`}
-                        style={{ backgroundImage: SELECT_ARROW }}
-                      >
-                        <option value="">Select class / program</option>
-                        {Object.keys(PROGRAM_SUBJECT_MAP).map(prog => (
-                          <option key={prog} value={prog}>{prog}</option>
-                        ))}
-                      </select>
+                      <ProgramSelect value={selectedProgram} onChange={handleProgramChange} options={Object.keys(PROGRAM_SUBJECT_MAP)} />
                     </div>
 
                     {/* 4. Select Subject / Course */}
@@ -891,43 +1036,17 @@ export default function TeacherManagement() {
                       <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
                         4. Select Subject / Course
                       </label>
-                      <select
-                        name="subject"
-                        required
-                        value={selectedSubject}
-                        onChange={(e) => setSelectedSubject(e.target.value)}
-                        className={`w-full appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[length:1rem] bg-white border border-stone-300 rounded-md px-3 py-2 text-sm ${selectedSubject ? 'text-[#1A1A1A]' : 'text-stone-400'} focus:outline-none focus:border-[#72102A] cursor-pointer font-medium`}
-                        style={{ backgroundImage: SELECT_ARROW }}
-                      >
-                        <option value="">Select subject / course</option>
-                        {(PROGRAM_SUBJECT_MAP[selectedProgram] || []).map(sub => (
-                          <option key={sub} value={sub}>{sub}</option>
-                        ))}
-                      </select>
+                      <SubjectSelect selected={selectedSubjects} onChange={setSelectedSubjects} options={PROGRAM_SUBJECT_MAP[selectedProgram] || []} />
                     </div>
 
-                    {/* 5. Chapters */}
-                    <div>
-                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                    {/* 5. Chapters (pre-selected from the lesson plan) */}
+                    <div className="md:col-span-2 relative">
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-2">
                         5. Chapters
                       </label>
-                      <ChaptersMultiSelect selected={selectedChapters} onChange={setSelectedChapters} options={selectedSubject ? ['Chapter 1', 'Chapter 2', 'Chapter 3', 'Chapter 4', 'Chapter 5'] : []} />
-                    </div>
-
-                    {/* 6. Due Date */}
-                    <div>
-                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
-                        6. Due Date
-                      </label>
-                      <input
-                        type="date"
-                        name="dueDate"
-                        required
-                        max="9999-12-31"
-                        value={selectedDueDate}
-                        onChange={(e) => { setSelectedDueDate(e.target.value); e.target.classList.toggle('text-stone-400', !e.target.value); e.target.classList.toggle('text-[#1A1A1A]', !!e.target.value); }}
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-stone-400 focus:outline-none focus:border-[#72102A] cursor-pointer"
-                      />
+                      <input required value={selectedChapters.length ? 'filled' : ''} onChange={() => {}} tabIndex={-1} aria-hidden="true" className="absolute left-0 bottom-0 w-full h-1 opacity-0 pointer-events-none" />
+                      {!selectedSubject && <p className="px-3 py-2 text-sm text-stone-400 border border-stone-300 rounded-md bg-white">Select subject / course first</p>}
+                      {selectedSubject && <ChapterMapping subjects={selectedSubjects} gold={false} />}
                     </div>
                   </div>
 
@@ -972,7 +1091,7 @@ export default function TeacherManagement() {
                     <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-2">
                       7. Mapped Teachers
                     </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                       {mappedTeachers.map(teacher => {
                         const isSelected = selectedTeacherIds.includes(teacher.id);
                         return (
@@ -1016,21 +1135,40 @@ export default function TeacherManagement() {
                   )}
 
                   {/* Instructions Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Due Date */}
+                    <div className="flex flex-col">
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        name="dueDate"
+                        required
+                        max="9999-12-31"
+                        value={selectedDueDate}
+                        onChange={(e) => { setSelectedDueDate(e.target.value); e.target.classList.toggle('text-stone-400', !e.target.value); e.target.classList.toggle('text-[#1A1A1A]', !!e.target.value); }}
+                        className="w-full flex-1 bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-stone-400 focus:outline-none focus:border-[#72102A] cursor-pointer"
+                      />
+                    </div>
+
                     {/* Instructions */}
-                    <div className="md:col-span-3">
+                    <div className="md:col-span-1">
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide">Instructions & Guidelines</label>
-                        <button type="button" onClick={handleResetInstructions} className="text-[11px] font-semibold text-[#72102A] hover:underline">Reset to Default</button>
+                        {isInstructionsEdited && (
+                          <button type="button" onClick={handleResetInstructions} className="text-[11px] font-semibold text-[#72102A] hover:underline">Reset to Default</button>
+                        )}
                       </div>
                       <textarea
                         name="instructions"
+                        ref={instructionsRef}
                         required
-                        rows="3"
+                        rows="1"
                         value={instr.text}
                         onChange={(e) => setInstr(prev => ({ ...prev, text: e.target.value }))}
                         placeholder="e.g. Prepare 10 MCQs and 5 Essay questions for the upcoming midterm exam..."
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] resize-none"
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] resize-none overflow-hidden"
                       />
                     </div>
                   </div>
@@ -1079,7 +1217,7 @@ export default function TeacherManagement() {
                       >
                         <option value="">Select exam</option>
                         {['Term I Exam', 'Half-Yearly Exam', 'Term II Exam', 'Annual Exam'].map(ex => (
-                          <option key={ex} value={ex}>{ex}</option>
+                          <option key={ex} className="text-[#1A1A1A]" value={ex}>{ex}</option>
                         ))}
                       </select>
                     </div>
@@ -1099,7 +1237,7 @@ export default function TeacherManagement() {
                       >
                         <option value="">Select session</option>
                         {['2025-26', '2026-27', '2027-28'].map(ses => (
-                          <option key={ses} value={ses}>{ses}</option>
+                          <option key={ses} className="text-[#1A1A1A]" value={ses}>{ses}</option>
                         ))}
                       </select>
                     </div>
@@ -1109,19 +1247,7 @@ export default function TeacherManagement() {
                       <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
                         3. Select Class / Program
                       </label>
-                      <select
-                        name="program"
-                        required
-                        value={selectedProgram}
-                        onChange={handleProgramChange}
-                        className={`w-full appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[length:1rem] bg-white border border-stone-300 rounded-md px-3 py-2 text-sm ${selectedProgram ? 'text-[#1A1A1A]' : 'text-stone-400'} focus:outline-none focus:border-[#72102A] cursor-pointer`}
-                        style={{ backgroundImage: SELECT_ARROW }}
-                      >
-                        <option value="">Select class / program</option>
-                        {Object.keys(PROGRAM_SUBJECT_MAP).map(prog => (
-                          <option key={prog} value={prog}>{prog}</option>
-                        ))}
-                      </select>
+                      <ProgramSelect value={selectedProgram} onChange={handleProgramChange} options={Object.keys(PROGRAM_SUBJECT_MAP)} />
                     </div>
 
                     {/* 2. Select Subject / Course */}
@@ -1129,43 +1255,17 @@ export default function TeacherManagement() {
                       <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
                         4. Select Subject / Course
                       </label>
-                      <select
-                        name="subject"
-                        required
-                        value={selectedSubject}
-                        onChange={(e) => setSelectedSubject(e.target.value)}
-                        className={`w-full appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[length:1rem] bg-white border border-stone-300 rounded-md px-3 py-2 text-sm ${selectedSubject ? 'text-[#1A1A1A]' : 'text-stone-400'} focus:outline-none focus:border-[#72102A] cursor-pointer font-medium`}
-                        style={{ backgroundImage: SELECT_ARROW }}
-                      >
-                        <option value="">Select subject / course</option>
-                        {(PROGRAM_SUBJECT_MAP[selectedProgram] || []).map(sub => (
-                          <option key={sub} value={sub}>{sub}</option>
-                        ))}
-                      </select>
+                      <SubjectSelect selected={selectedSubjects} onChange={setSelectedSubjects} options={PROGRAM_SUBJECT_MAP[selectedProgram] || []} />
                     </div>
 
-                    {/* 5. Chapters */}
-                    <div>
-                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                    {/* 5. Chapters (pre-selected from the lesson plan) */}
+                    <div className="md:col-span-2 relative">
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-2">
                         5. Chapters
                       </label>
-                      <ChaptersMultiSelect selected={selectedChapters} onChange={setSelectedChapters} options={selectedSubject ? ['Chapter 1', 'Chapter 2', 'Chapter 3', 'Chapter 4', 'Chapter 5'] : []} />
-                    </div>
-
-                    {/* 6. Due Date */}
-                    <div>
-                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
-                        6. Due Date
-                      </label>
-                      <input
-                        type="date"
-                        name="dueDate"
-                        required
-                        max="9999-12-31"
-                        value={selectedDueDate}
-                        onChange={(e) => { setSelectedDueDate(e.target.value); e.target.classList.toggle('text-stone-400', !e.target.value); e.target.classList.toggle('text-[#1A1A1A]', !!e.target.value); }}
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-stone-400 focus:outline-none focus:border-[#72102A] cursor-pointer"
-                      />
+                      <input required value={selectedChapters.length ? 'filled' : ''} onChange={() => {}} tabIndex={-1} aria-hidden="true" className="absolute left-0 bottom-0 w-full h-1 opacity-0 pointer-events-none" />
+                      {!selectedSubject && <p className="px-3 py-2 text-sm text-stone-400 border border-stone-300 rounded-md bg-white">Select subject / course first</p>}
+                      {selectedSubject && <ChapterMapping subjects={selectedSubjects} gold={true} />}
                     </div>
                   </div>
 
@@ -1173,7 +1273,7 @@ export default function TeacherManagement() {
                   {selectedProgram && selectedSubject && (
                   <div>
                     <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-2">7. Mapped Teachers</label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                       {mappedTeachers.map(teacher => {
                         const isSelected = selectedTeacherIds.includes(teacher.id);
                         return (
@@ -1217,21 +1317,40 @@ export default function TeacherManagement() {
                   )}
 
                   {/* Instructions Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Due Date */}
+                    <div className="flex flex-col">
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        name="dueDate"
+                        required
+                        max="9999-12-31"
+                        value={selectedDueDate}
+                        onChange={(e) => { setSelectedDueDate(e.target.value); e.target.classList.toggle('text-stone-400', !e.target.value); e.target.classList.toggle('text-[#1A1A1A]', !!e.target.value); }}
+                        className="w-full flex-1 bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-stone-400 focus:outline-none focus:border-[#72102A] cursor-pointer"
+                      />
+                    </div>
+
                     {/* Instructions */}
-                    <div className="md:col-span-3">
+                    <div className="md:col-span-1">
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide">Instructions & Guidelines</label>
-                        <button type="button" onClick={handleResetInstructions} className="text-[11px] font-semibold text-[#72102A] hover:underline">Reset to Default</button>
+                        {isInstructionsEdited && (
+                          <button type="button" onClick={handleResetInstructions} className="text-[11px] font-semibold text-[#72102A] hover:underline">Reset to Default</button>
+                        )}
                       </div>
                       <textarea
                         name="instructions"
+                        ref={instructionsRef}
                         required
-                        rows="3"
+                        rows="1"
                         value={instr.text}
                         onChange={(e) => setInstr(prev => ({ ...prev, text: e.target.value }))}
                         placeholder="e.g. Prepare 10 MCQs and 5 Essay questions for the upcoming midterm exam..."
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] resize-none"
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] resize-none overflow-hidden"
                       />
                     </div>
                   </div>

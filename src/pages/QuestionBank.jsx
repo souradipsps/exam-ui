@@ -14,6 +14,7 @@ import { INITIAL_QUESTIONS } from '../data/mockQuestions.js';
 import { NAV_ITEMS } from '../data/navigation.js';
 import TeacherManagement from './TeacherManagement.jsx';
 import ExamBlueprint from './ExamBlueprint.jsx';
+import QuestionCreation from './QuestionCreation.jsx';
 
 export default function QuestionBank() {
   const [questions, setQuestions] = useState(INITIAL_QUESTIONS);
@@ -385,8 +386,14 @@ export default function QuestionBank() {
 
             {activeNav === 'examBlueprint' && <ExamBlueprint showToast={showToast} />}
 
+            {activeNav === 'questionCreation' && (
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                <QuestionCreation showToast={showToast} />
+              </div>
+            )}
+
             {/* ── COMING SOON VIEW FOR OTHER SECTIONS ── */}
-            {activeNav !== 'questionBank' && activeNav !== 'teacherManagement' && activeNav !== 'examBlueprint' && (
+            {activeNav !== 'questionBank' && activeNav !== 'teacherManagement' && activeNav !== 'examBlueprint' && activeNav !== 'questionCreation' && (
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <ComingSoonPlaceholder activeNav={activeNav} />
               </div>

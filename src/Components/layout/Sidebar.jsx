@@ -18,12 +18,12 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
       <aside
         style={{
           width: '240px',
-          background: 'linear-gradient(180deg, #72102a 0%, #5C0C21 100%)',
+          background: 'linear-gradient(180deg, #6B0E25 0%, #4D0719 100%)',
           borderRight: '1px solid rgba(255, 255, 255, 0.08)',
           display: 'flex',
           flexDirection: 'column',
           flexShrink: 0,
-          boxShadow: 'rgba(0, 0, 0, 0.15) 4px 0px 20px',
+          boxShadow: '4px 0px 24px rgba(0, 0, 0, 0.18)',
           // Mobile: fixed drawer; Desktop: static
           position: undefined,
           zIndex: 50,
@@ -83,24 +83,29 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
                     if (onClose) onClose(); // close drawer on mobile after nav
                   }}
                   onKeyDown={(e) => handleNavKeyDown && handleNavKeyDown(e, index)}
-                  className={`w-full flex items-center text-[13px] transition-all text-left relative outline-none focus:outline-none ${
+                  className={`w-full flex items-center text-[13px] transition-all text-left relative overflow-hidden outline-none focus:outline-none ${
                     isActive
                       ? 'font-bold text-white'
                       : 'font-medium text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                   style={{
                     padding: '10px 14px',
-                    borderRadius: '9px',
+                    borderRadius: '10px',
                     gap: '11px',
                     outline: 'none',
-                    ...(isActive ? { color: '#ffffff' } : {}),
+                    ...(isActive
+                      ? {
+                          color: '#ffffff',
+                          backgroundColor: 'rgba(255, 255, 255, 0.14)',
+                        }
+                      : {}),
                   }}
                 >
                   {/* Active gold vertical bar indicator */}
                   {isActive && (
                     <span
-                      className="absolute left-1 top-2 bottom-2 w-1 rounded-full"
-                      style={{ backgroundColor: '#c9a84c' }}
+                      className="absolute left-0 top-[7px] bottom-[7px] w-[3.5px] rounded-full"
+                      style={{ backgroundColor: '#D4B24C' }}
                     />
                   )}
                   <Icon

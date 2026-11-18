@@ -154,27 +154,38 @@ export default function CreateQuestionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-      <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed top-[60px] left-0 md:left-[240px] right-0 bottom-0 z-40 bg-[#FAF8F5]/70 backdrop-blur-md p-3 sm:p-5 lg:p-6 flex flex-col overflow-hidden">
+      <div className="relative w-full h-full bg-white/85 backdrop-blur-xl rounded-3xl shadow-[0_14px_44px_-10px_rgba(24,24,27,0.12),0_0_0_1px_rgba(232,226,217,0.9)] border border-white/90 overflow-hidden flex flex-col animate-ios-reveal">
         
         {/* MODAL HEADER */}
-        <div className="px-6 py-5 bg-gradient-to-r from-[#72102A] to-[#5C0C21] text-white flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-[#C9A84C]/25 text-[#FDF8E8] border border-[#C9A84C]/50 flex items-center justify-center font-bold text-lg">
+        <div className="px-5 sm:px-7 py-4 bg-white/80 backdrop-blur-lg border-b border-[#E8E2D9] flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <span className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#8B1F3A] to-[#5C0C21] text-white flex items-center justify-center font-bold text-xs shadow-sm shrink-0">
               Q+
             </span>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold font-serif leading-tight">
+            <div className="min-w-0">
+              <h2
+                style={{
+                  fontFamily: "'Outfit', 'Inter', system-ui, sans-serif",
+                  fontSize: '17px',
+                  fontWeight: 800,
+                  color: '#111827',
+                  margin: 0,
+                  lineHeight: 1.2,
+                }}
+              >
                 {editingItem ? 'Edit Question Specifications' : 'Create Question Form'}
               </h2>
-              <p className="text-xs text-[#F5E6EA]/80 mt-0.5">
+              <p className="text-[11.5px] text-stone-500 mt-0.5 truncate">
                 Workflow Step {step} of 4 • Author questions aligned with examination blueprint
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all"
+            style={{ outline: 'none' }}
+            className="w-9 h-9 rounded-full bg-stone-100/80 hover:bg-stone-200/80 text-stone-500 hover:text-stone-800 flex items-center justify-center transition-colors cursor-pointer shrink-0"
           >
             ✕
           </button>

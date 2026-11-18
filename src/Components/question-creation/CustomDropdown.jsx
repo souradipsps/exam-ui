@@ -10,6 +10,7 @@ export default function CustomDropdown({
   variant = 'default', // 'default' | 'amber' | 'emerald' | 'maroon'
   searchable,
   align = 'left', // 'left' | 'right'
+  rounded = 'xl', // 'xl' | 'full'
   className = '',
   menuClassName = '',
   disabled = false,
@@ -223,12 +224,6 @@ export default function CustomDropdown({
     return 'text-stone-700 hover:bg-[#FAF5F6] hover:text-[#72102A]';
   };
 
-  const getCheckColor = (opt) => {
-    if (opt.tone === 'amber') return 'text-[#D97706]';
-    if (opt.tone === 'emerald') return 'text-emerald-600';
-    return 'text-[#72102A]';
-  };
-
   const menuContent =
     isOpen && menuStyle
       ? createPortal(
@@ -319,34 +314,21 @@ export default function CustomDropdown({
                         </span>
                       </span>
 
-                      <span className="flex items-center gap-1.5 shrink-0">
-                        {opt.badge !== undefined && opt.badge !== null && (
-                          <span
-                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${
-                              isSelected
-                                ? opt.tone === 'amber'
-                                  ? 'bg-[#D97706] text-white'
-                                  : opt.tone === 'emerald'
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'bg-[#72102A] text-white'
-                                : 'bg-stone-100 text-stone-500'
-                            }`}
-                          >
-                            {opt.badge}
-                          </span>
-                        )}
-                        {isSelected && (
-                          <svg
-                            className={`w-3.5 h-3.5 shrink-0 ${getCheckColor(opt)}`}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2.75}
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </span>
+                      {opt.badge !== undefined && opt.badge !== null && (
+                        <span
+                          className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none shrink-0 ${
+                            isSelected
+                              ? opt.tone === 'amber'
+                                ? 'bg-[#D97706] text-white'
+                                : opt.tone === 'emerald'
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-[#72102A] text-white'
+                              : 'bg-stone-100 text-stone-500'
+                          }`}
+                        >
+                          {opt.badge}
+                        </span>
+                      )}
                     </button>
                   );
                 })
@@ -375,7 +357,10 @@ export default function CustomDropdown({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         title={selectedOption?.label || placeholder}
-        className={`w-full h-[36px] flex items-center justify-between gap-2 rounded-xl border px-3 text-xs font-semibold transition-all duration-150 cursor-pointer outline-none focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${getTriggerStyles()}`}
+        style={{ outline: 'none' }}
+        className={`w-full h-[36px] flex items-center justify-between gap-2 border text-xs font-semibold transition-all duration-150 cursor-pointer outline-none focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
+          rounded === 'full' ? 'rounded-full px-3.5' : 'rounded-xl px-3'
+        } ${getTriggerStyles()}`}
       >
         <span className="flex items-center gap-2 min-w-0 truncate">
           {selectedOption?.icon && (

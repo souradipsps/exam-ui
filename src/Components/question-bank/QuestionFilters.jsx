@@ -6,6 +6,8 @@ function getOptionLabel(label, option) {
     if (label === 'Marks') return 'All Marks';
     if (label === 'Class') return 'All Classes';
     if (label === 'Chapter') return 'All Chapters';
+    if (label === 'Session') return 'All Sessions';
+    if (label === 'Exam') return 'All Exams';
     if (label === 'Types' || label === 'Type') return 'All Types';
     return `All ${label}s`;
   }
@@ -29,6 +31,11 @@ export default function QuestionFilters({
   setFilterType,
   filterMarks = 'All',
   setFilterMarks,
+  filterExam = 'All',
+  setFilterExam,
+  filterSession = 'All',
+  setFilterSession,
+  searchPlaceholder = 'Search by question text, ID, chapter, or author…',
 }) {
   const currentClass = filterClass;
   const setClass = setFilterClass;
@@ -106,6 +113,11 @@ export default function QuestionFilters({
     const list = Array.from(set).sort((a, b) => Number(a) - Number(b));
     return ['All', ...(list.length ? list : ['1', '2', '3', '5'])];
   }, [questions, currentClass, filterSubject, filterChapter, filterType]);
+
+  // Exam / Session: independent filters (not part of the cascade)
+  const uniq = (key) => ['All', ...Array.from(new Set(questions.map((q) => q[key]).filter(Boolean))).sort()];
+  const examOptions = useMemo(() => uniq('exam'), [questions]);
+  const sessionOptions = useMemo(() => uniq('session'), [questions]);
 
   // Cascading change handlers to prune downstream filters
   const handleClassChange = (newClass) => {
@@ -252,8 +264,22 @@ export default function QuestionFilters({
     setFilterMarks(newMarks);
   };
 
-  // Filter chain configuration in exact requested sequence: CLASS > SUBJECT > CHAPTER > TYPES > MARKS
+  // Filter chain configuration in exact requested sequence: EXAM > SESSION > CLASS > SUBJECT > CHAPTER > TYPES > MARKS
   const filterConfigs = [
+    {
+      label: 'Exam',
+      value: filterExam,
+      set: (v) => setFilterExam && setFilterExam(v),
+      opts: examOptions,
+      maxWidth: '150px',
+    },
+    {
+      label: 'Session',
+      value: filterSession,
+      set: (v) => setFilterSession && setFilterSession(v),
+      opts: sessionOptions,
+      maxWidth: '130px',
+    },
     {
       label: 'Class',
       value: currentClass,
@@ -291,7 +317,7 @@ export default function QuestionFilters({
     },
   ];
 
-  const activeFiltersCount = [currentClass, filterSubject, filterChapter, filterType, filterMarks].filter(
+  const activeFiltersCount = [currentClass, filterSubject, filterChapter, filterType, filterMarks, filterExam, filterSession].filter(
     (v) => v && v !== 'All'
   ).length;
 
@@ -324,7 +350,7 @@ export default function QuestionFilters({
         />
         <input
           type="text"
-          placeholder="Search by question text, ID, chapter, or author…"
+          placeholder={searchPlaceholder}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{
@@ -376,8 +402,8 @@ export default function QuestionFilters({
         )}
       </div>
 
-      {/* Filters Row - Chain: CLASS > SUBJECT > CHAPTER > TYPES > MARKS */}
-      <div className="flex flex-wrap items-center gap-[6px]">
+      {/* Filters Row - Chain: EXAM > SESSION > CLASS > SUBJECT > CHAPTER > TYPES > MARKS */}
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-[6px]">
         <span
           style={{
             fontSize: '11px',
@@ -387,6 +413,7 @@ export default function QuestionFilters({
             letterSpacing: '0.08em',
             marginRight: '4px',
           }}
+          className="col-span-2 sm:col-auto"
         >
           Filters
         </span>
@@ -397,6 +424,7 @@ export default function QuestionFilters({
             <React.Fragment key={f.label}>
               {idx > 0 && (
                 <span
+                  className="hidden sm:inline"
                   style={{
                     color: '#D1D5DB',
                     fontSize: '11px',
@@ -413,7 +441,10 @@ export default function QuestionFilters({
                 value={f.value}
                 onChange={(e) => f.set(e.target.value)}
                 title={`${f.label}: ${f.value}`}
+                aria-label={f.label}
+                className="w-full sm:w-auto min-w-0 !max-w-full sm:!max-w-[var(--fw)]"
                 style={{
+                  '--fw': f.maxWidth || '180px',
                   appearance: 'none',
                   WebkitAppearance: 'none',
                   padding: '5px 12px',
@@ -429,6 +460,7 @@ export default function QuestionFilters({
                   boxShadow: isActive ? '0 0 0 3px rgba(114,16,42,0.08)' : 'none',
                   maxWidth: f.maxWidth || '180px',
                   minWidth: '90px',
+                  width: undefined,
                   textOverflow: 'ellipsis',
                 }}
               >
@@ -451,7 +483,10 @@ export default function QuestionFilters({
               if (setFilterChapter) setFilterChapter('All');
               setFilterType('All');
               setFilterMarks('All');
+              if (setFilterExam) setFilterExam('All');
+              if (setFilterSession) setFilterSession('All');
             }}
+            className="col-span-2 sm:col-auto justify-center"
             style={{
               display: 'inline-flex',
               alignItems: 'center',

@@ -1,40 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Icon from '../Components/common/Icon.jsx';
 import { ModalWrapper } from '../Components/common/ModalWrapper.jsx';
+import QuestionFilters from '../Components/question-bank/QuestionFilters.jsx';
+import AssignmentTracking from '../Components/blueprint/AssignmentTracking.jsx';
 import BlueprintWizard from '../Components/blueprint/BlueprintWizard.jsx';
-import VariationEditor, { VariationTabs } from '../Components/blueprint/VariationEditor.jsx';
-import { blueprintService, validateVariation, variationTotals } from '../data/blueprintService.js';
+import VariationEditor, { TemplatePreview } from '../Components/blueprint/VariationEditor.jsx';
+import { blueprintService, SESSIONS, validateVariation } from '../data/blueprintService.js';
 
 const inputCls = 'border border-[#E8E2D9] rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:border-[#72102a]';
 const fmt = (d) => new Date(d).toLocaleDateString();
 
-function VariationTable({ v }) {
-  const t = variationTotals(v);
-  return (
-    <div className="mb-4">
-      <h4 className="text-xs font-bold text-gray-700 mb-1.5">{v.label} <span className="font-normal text-gray-400">— {t.questions} questions, {t.marks} marks</span></h4>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs min-w-[420px]">
-          <thead><tr className="text-left text-gray-500 border-b border-[#E8E2D9]"><th className="py-1">Type</th><th>Section</th><th>Qs</th><th>Marks each</th><th>Total</th></tr></thead>
-          <tbody>
-            {v.rows.map((r) => (
-              <tr key={r.name} className="border-b border-gray-50"><td className="py-1.5 font-semibold">{r.name}</td><td>{r.section}</td><td>{r.count}</td><td>{r.marks}</td><td>{r.count * r.marks}</td></tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="text-[11px] text-gray-500 mt-1.5">
-        Cognitive: {Object.entries(v.cognitive).filter(([, n]) => n).map(([k, n]) => `${k} ${n}%`).join(', ') || '—'}<br />
-        Difficulty: {Object.entries(v.difficulty).filter(([, n]) => n).map(([k, n]) => `${k} ${n}%`).join(', ') || '—'}
-      </p>
-    </div>
-  );
-}
-
 function EditModal({ bp, template, onClose, onSaved }) {
-  const [name, setName] = useState(bp.name);
-  const [variations, setVariations] = useState(() => JSON.parse(JSON.stringify(template?.variations || [])));
-  const [active, setActive] = useState(0);
+  const [session, setSession] = useState(bp.session || '');
+  const [variations, setVariations] = useState(() => JSON.parse(JSON.stringify((template?.variations || []).slice(0, 1)))); // a template has a single configuration
   const [types, setTypes] = useState(null);
   const [errors, setErrors] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -43,28 +21,26 @@ function EditModal({ bp, template, onClose, onSaved }) {
 
   const save = async () => {
     const errs = [];
-    if (!name.trim()) errs.push('Blueprint name is required.');
-    variations.forEach((v) => validateVariation(v, bp.exam.totalMarks).forEach((m) => errs.push(`${v.label}: ${m}`)));
+    if (!session) errs.push('Session is required.');
+    variations.forEach((v) => validateVariation(v, bp.exam.totalMarks).forEach((m) => errs.push(m)));
     setErrors(errs);
     if (errs.length) return;
     setSaving(true);
-    try { await blueprintService.updateBlueprint(bp.id, { name: name.trim(), variations }); onSaved(); }
+    try { await blueprintService.updateBlueprint(bp.id, { session, variations }); onSaved(); }
     catch (e) { setErrors([e.message]); setSaving(false); }
   };
 
   return (
     <ModalWrapper title="Edit Blueprint" subtitle={`${bp.exam.name} · ${bp.context.className} ${bp.context.subject}`} onClose={onClose} wide>
-      <label className="block text-xs font-semibold text-gray-600 mb-3">Blueprint name
-        <input className={`${inputCls} w-full mt-1`} value={name} onChange={(e) => setName(e.target.value)} />
+      <label className="block text-xs font-semibold text-gray-600 mb-3">Session
+        <select className={`${inputCls} w-full mt-1`} value={session} onChange={(e) => setSession(e.target.value)}>
+          <option value="">Select session…</option>
+          {SESSIONS.map((x) => <option key={x} value={x}>{x}</option>)}
+        </select>
       </label>
       {!types ? <p className="text-xs text-gray-400 animate-pulse py-4 text-center">Loading question types…</p> : variations.length > 0 && (
-        <>
-          <VariationTabs variations={variations} active={active} setActive={setActive}
-            onAdd={() => { setVariations((vs) => [...vs, { ...JSON.parse(JSON.stringify(vs[active])), label: `Variation ${vs.length + 1}` }]); setActive(variations.length); }}
-            onRemove={(i) => { setVariations((vs) => vs.filter((_, j) => j !== i)); setActive(0); }} />
-          <VariationEditor value={variations[active]} types={types} examMarks={bp.exam.totalMarks}
-            onChange={(nv) => setVariations((vs) => vs.map((v, i) => (i === active ? nv : v)))} />
-        </>
+        <VariationEditor value={variations[0]} types={types} examMarks={bp.exam.totalMarks}
+          onChange={(nv) => setVariations([nv])} />
       )}
       {errors.length > 0 && <ul className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 list-disc pl-6 mt-3" role="alert">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
       <div className="flex justify-end gap-2 mt-4">
@@ -80,8 +56,13 @@ export default function ExamBlueprint({ showToast }) {
   const [blueprints, setBlueprints] = useState(null);
   const [templates, setTemplates] = useState([]);
   const [search, setSearch] = useState('');
+  const [fExam, setFExam] = useState('All');
+  const [fSession, setFSession] = useState('All');
   const [fClass, setFClass] = useState('All');
   const [fSubject, setFSubject] = useState('All');
+  const [fChapter, setFChapter] = useState('All');
+  const [fType, setFType] = useState('All');
+  const [fMarks, setFMarks] = useState('All');
   const [modal, setModal] = useState(null); // {type:'details'|'types'|'edit'|'delete', bp}
   const [error, setError] = useState('');
 
@@ -94,13 +75,32 @@ export default function ExamBlueprint({ showToast }) {
   useEffect(() => { load(); }, []);
 
   const tplOf = (bp) => templates.find((t) => t.id === bp.templateId);
-  const classes = useMemo(() => [...new Set((blueprints || []).map((b) => b.context.className))], [blueprints]);
-  const subjects = useMemo(() => [...new Set((blueprints || []).map((b) => b.context.subject))], [blueprints]);
-  const filtered = (blueprints || []).filter((b) => {
+  // Flatten each blueprint into chapter x type x marks rows so the shared QuestionFilters
+  // (same component as the Question Bank) can build its cascading options from them.
+  const rows = useMemo(() => (blueprints || []).flatMap((b) => {
+    const rs = tplOf(b)?.variations.flatMap((v) => v.rows) || [];
+    const types = [...new Set(rs.map((r) => r.name))];
+    const marks = [...new Set(rs.map((r) => r.marks))];
+    const chapters = b.context.chapters.length ? b.context.chapters : [undefined];
+    return chapters.flatMap((chapter) => (types.length ? types : [undefined]).flatMap((type) =>
+      (marks.length ? marks : [undefined]).map((m) => ({
+        bpId: b.id, exam: b.exam.name, session: b.session || b.exam.session, class: b.context.className,
+        subject: b.context.subject, chapter, type, marks: m,
+      }))));
+  }), [blueprints, templates]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const filtered = useMemo(() => {
+    const ids = new Set(rows.filter((r) =>
+      (fExam === 'All' || r.exam === fExam) && (fSession === 'All' || r.session === fSession)
+      && (fClass === 'All' || r.class === fClass) && (fSubject === 'All' || r.subject === fSubject)
+      && (fChapter === 'All' || r.chapter === fChapter) && (fType === 'All' || r.type === fType)
+      && (fMarks === 'All' || String(r.marks) === fMarks)).map((r) => r.bpId));
     const s = search.toLowerCase();
-    return (!s || [b.name, b.exam.name, b.templateName, b.context.subject].some((x) => x.toLowerCase().includes(s)))
-      && (fClass === 'All' || b.context.className === fClass) && (fSubject === 'All' || b.context.subject === fSubject);
-  });
+    return (blueprints || []).filter((b) => ids.has(b.id)
+      && (!s || [b.name, b.session || '', b.id, b.exam.name, b.templateName, b.context.subject, b.context.className].some((x) => x.toLowerCase().includes(s))));
+  }, [rows, blueprints, search, fExam, fSession, fClass, fSubject, fChapter, fType, fMarks]);
+
+  if (view === 'tracking') return <AssignmentTracking onBack={() => setView('list')} />;
 
   if (view === 'create') {
     return <BlueprintWizard onCancel={() => setView('list')}
@@ -121,19 +121,28 @@ export default function ExamBlueprint({ showToast }) {
           <h1 className="text-[18px] md:text-[22px] font-extrabold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif", letterSpacing: '-0.02em' }}>Blueprint</h1>
           <p className="text-[12.5px] text-gray-500 mt-1">Design and manage structured blueprints for exam papers</p>
         </div>
-        <button onClick={() => setView('create')} className="flex items-center gap-1.5 text-xs font-bold text-white rounded-lg px-4 py-2.5" style={{ backgroundColor: '#72102a' }}>
-          <Icon name="plus" className="w-4 h-4" /> Create New Blueprint
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => setView('tracking')} className="flex items-center gap-1.5 text-xs font-bold rounded-lg px-4 py-2.5 border border-[#72102a]/30 bg-white hover:bg-[#72102a]/5" style={{ color: '#72102a' }}>
+            <Icon name="users" className="w-4 h-4" /> Assignment Tracking
+          </button>
+          <button onClick={() => setView('create')} className="flex items-center gap-1.5 text-xs font-bold text-white rounded-lg px-4 py-2.5" style={{ backgroundColor: '#72102a' }}>
+            <Icon name="plus" className="w-4 h-4" /> Create New Blueprint
+          </button>
+        </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
-          <Icon name="search" className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input className={`${inputCls} w-full pl-9`} placeholder="Search blueprints, exams, templates…" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <select className={inputCls} value={fClass} onChange={(e) => setFClass(e.target.value)} aria-label="Filter by class"><option value="All">All classes</option>{classes.map((c) => <option key={c}>{c}</option>)}</select>
-        <select className={inputCls} value={fSubject} onChange={(e) => setFSubject(e.target.value)} aria-label="Filter by subject"><option value="All">All subjects</option>{subjects.map((c) => <option key={c}>{c}</option>)}</select>
-      </div>
+      <QuestionFilters
+        questions={rows}
+        searchPlaceholder="Search by session, ID, exam, template, or subject…"
+        searchTerm={search} setSearchTerm={setSearch}
+        filterExam={fExam} setFilterExam={setFExam}
+        filterSession={fSession} setFilterSession={setFSession}
+        filterClass={fClass} setFilterClass={setFClass}
+        filterSubject={fSubject} setFilterSubject={setFSubject}
+        filterChapter={fChapter} setFilterChapter={setFChapter}
+        filterType={fType} setFilterType={setFType}
+        filterMarks={fMarks} setFilterMarks={setFMarks}
+      />
 
       {error && <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">{error}</div>}
 
@@ -176,7 +185,7 @@ export default function ExamBlueprint({ showToast }) {
         <ModalWrapper title={modal.bp.name} subtitle="Blueprint details" onClose={close}>
           <dl className="grid grid-cols-2 gap-3 text-xs">
             {[['Exam', modal.bp.exam.name], ['Total marks', modal.bp.exam.totalMarks], ['Duration', `${modal.bp.exam.duration} min`], ['Template', modal.bp.templateName],
-              ['Class / Programme', modal.bp.context.className], ['Subject / Course', modal.bp.context.subject], ['Variations', tpl?.variations.length ?? 0], ['Created', fmt(modal.bp.createdAt)]].map(([k, v]) => (
+              ['Class / Programme', modal.bp.context.className], ['Subject / Course', modal.bp.context.subject], ['Created', fmt(modal.bp.createdAt)]].map(([k, v]) => (
                 <div key={k}><dt className="text-[11px] text-gray-400">{k}</dt><dd className="font-semibold text-gray-700">{v}</dd></div>
             ))}
           </dl>
@@ -186,7 +195,7 @@ export default function ExamBlueprint({ showToast }) {
       )}
       {modal?.type === 'types' && (
         <ModalWrapper title="Question Type Blueprint" subtitle={modal.bp.name} onClose={close} wide>
-          {tpl ? tpl.variations.map((v, i) => <VariationTable key={i} v={v} />) : <p className="text-xs text-gray-400">Template not found.</p>}
+          {tpl?.variations[0] ? <TemplatePreview v={tpl.variations[0]} /> : <p className="text-xs text-gray-400">Template not found.</p>}
         </ModalWrapper>
       )}
       {modal?.type === 'edit' && (

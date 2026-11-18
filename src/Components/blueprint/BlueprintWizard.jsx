@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import Icon from '../common/Icon.jsx';
-import VariationEditor, { VariationTabs, Section } from './VariationEditor.jsx';
+import VariationEditor, { TemplatePreview, Section } from './VariationEditor.jsx';
 import {
-  blueprintService, emptyVariation, validateVariation, variationTotals,
+  blueprintService, SESSIONS, emptyVariation, validateVariation, variationTotals,
 } from '../../data/blueprintService.js';
 
 const inputCls = 'w-full border border-[#E8E2D9] rounded-lg px-3 py-2.5 text-xs bg-white focus:outline-none focus:border-[#72102a]';
@@ -29,14 +29,13 @@ export default function BlueprintWizard({ onCancel, onSaved }) {
   const [types, setTypes] = useState(null);
   const [loadError, setLoadError] = useState('');
 
-  const [name, setName] = useState('');
+  const [session, setSession] = useState('');
   const [examId, setExamId] = useState('');
   const [contextId, setContextId] = useState('');
   const [tplMode, setTplMode] = useState('existing'); // 'existing' | 'new'
   const [templateId, setTemplateId] = useState('');
   const [tplName, setTplName] = useState('');
-  const [variations, setVariations] = useState([emptyVariation()]);
-  const [active, setActive] = useState(0);
+  const [config, setConfig] = useState(() => emptyVariation('Template'));
   const [errors, setErrors] = useState([]);
   const [saving, setSaving] = useState(false);
 
@@ -56,21 +55,12 @@ export default function BlueprintWizard({ onCancel, onSaved }) {
     blueprintService.getQuestionTypes(contextId).then(setTypes).catch(() => setLoadError('Could not load question types.'));
   }, [contextId]);
 
-  const addVariation = () => {
-    setVariations((vs) => [...vs, { ...JSON.parse(JSON.stringify(vs[active])), label: `Variation ${vs.length + 1}` }]);
-    setActive(variations.length);
-  };
-  const removeVariation = (i) => {
-    setVariations((vs) => vs.filter((_, j) => j !== i));
-    setActive(0);
-  };
-
   const needsNewTemplate = tplMode === 'new';
   const next = () => {
     const errs = [];
     if (step === 0) {
       if (!examId) errs.push('Select an exam.');
-      if (!name.trim()) errs.push('Enter a blueprint name.');
+      if (!session) errs.push('Select a session.');
     }
     if (step === 1 && !contextId) errs.push('Select an academic context.');
     if (step === 2) {
@@ -78,7 +68,7 @@ export default function BlueprintWizard({ onCancel, onSaved }) {
       if (tplMode === 'new' && !tplName.trim()) errs.push('Enter a template name.');
     }
     if (step === 3) {
-      variations.forEach((v) => validateVariation(v, exam.totalMarks).forEach((m) => errs.push(`${v.label}: ${m}`)));
+      validateVariation(config, exam.totalMarks).forEach((m) => errs.push(m));
     }
     setErrors(errs);
     if (errs.length) return;
@@ -91,9 +81,9 @@ export default function BlueprintWizard({ onCancel, onSaved }) {
     setSaving(true);
     try {
       const bp = await blueprintService.createBlueprint({
-        name: name.trim(), exam, context,
+        session, exam, context,
         templateId: needsNewTemplate ? null : templateId,
-        template: needsNewTemplate ? { name: tplName.trim(), variations } : null,
+        template: needsNewTemplate ? { name: tplName.trim(), variations: [config] } : null,
       });
       onSaved(bp);
     } catch (e) {
@@ -102,7 +92,7 @@ export default function BlueprintWizard({ onCancel, onSaved }) {
     }
   };
 
-  const shownVariations = needsNewTemplate ? variations : template?.variations || [];
+  const shown = needsNewTemplate ? config : template?.variations?.[0];
 
   return (
     <div className="flex flex-col gap-4">
@@ -129,7 +119,12 @@ export default function BlueprintWizard({ onCancel, onSaved }) {
         <Section title="Blueprint & Exam" hint="Choose the exam this blueprint is for.">
           {!exams ? <Spinner text="Loading exams…" /> : (
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Blueprint name *"><input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Class 10 Physics Mid Term" /></Field>
+              <Field label="Session *">
+                <select className={inputCls} value={session} onChange={(e) => setSession(e.target.value)}>
+                  <option value="">Select session…</option>
+                  {SESSIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </Field>
               <Field label="Exam *">
                 <select className={inputCls} value={examId} onChange={(e) => setExamId(e.target.value)}>
                   <option value="">Select exam…</option>
@@ -138,7 +133,7 @@ export default function BlueprintWizard({ onCancel, onSaved }) {
               </Field>
             </div>
           )}
-          {exam && <Info rows={[['Type', exam.type], ['Term', exam.term], ['Total marks', exam.totalMarks], ['Duration', `${exam.duration} min`]]} />}
+          {exam && <Info rows={[['Examination', exam.name], ['Total marks', exam.totalMarks], ['Duration', `${exam.duration} min`]]} />}
         </Section>
       )}
 
@@ -177,35 +172,25 @@ export default function BlueprintWizard({ onCancel, onSaved }) {
             <Field label="Template *">
               <select className={inputCls} value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
                 <option value="">Select template…</option>
-                {templates.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.variations.length} variation{t.variations.length > 1 ? 's' : ''})</option>)}
+                {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </Field>
           ) : (
             <Field label="New template name *"><input className={inputCls} value={tplName} onChange={(e) => setTplName(e.target.value)} placeholder="e.g. Standard 50-mark paper" /></Field>
           )}
+          {tplMode === 'existing' && template?.variations?.[0] && <TemplatePreview v={template.variations[0]} />}
         </Section>
       )}
 
       {step === 3 && (!types ? <Spinner text="Loading question types…" /> : (
-        <div>
-          <VariationTabs variations={variations} active={active} setActive={setActive} onAdd={addVariation} onRemove={removeVariation} />
-          <input className={`${inputCls} mb-3`} value={variations[active].label} placeholder="Variation name"
-            onChange={(e) => setVariations((vs) => vs.map((v, i) => (i === active ? { ...v, label: e.target.value } : v)))} />
-          <VariationEditor value={variations[active]} types={types} examMarks={exam.totalMarks}
-            onChange={(nv) => setVariations((vs) => vs.map((v, i) => (i === active ? nv : v)))} />
-        </div>
+        <VariationEditor value={config} types={types} examMarks={exam.totalMarks} onChange={setConfig} />
       ))}
 
       {step === 4 && (
         <Section title="Review" hint="Confirm and save the blueprint.">
-          <Info rows={[['Blueprint', name], ['Exam', `${exam.name} (${exam.totalMarks} marks)`], ['Context', context.name], ['Template', needsNewTemplate ? `${tplName} (new)` : template?.name]]} />
-          <div className="mt-3 flex flex-col gap-1.5">
-            {shownVariations.map((v, i) => {
-              const t = variationTotals(v);
-              return <div key={i} className="text-xs text-gray-600"><b>{v.label}</b> — {v.sections.length} section(s), {t.questions} questions, {t.marks} marks</div>;
-            })}
-          </div>
-          {!needsNewTemplate && template && shownVariations.some((v) => variationTotals(v).marks !== exam.totalMarks) && (
+          <Info rows={[['Session', session], ['Exam', `${exam.name} (${exam.totalMarks} marks)`], ['Context', context.name], ['Template', needsNewTemplate ? `${tplName} (new)` : template?.name]]} />
+          {shown && <TemplatePreview v={shown} />}
+          {shown && variationTotals(shown).marks !== exam.totalMarks && (
             <p className="text-xs text-amber-600 mt-3">Note: the selected template's marks differ from the exam's total ({exam.totalMarks}).</p>
           )}
         </Section>

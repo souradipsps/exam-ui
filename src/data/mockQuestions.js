@@ -1,4 +1,4 @@
-export const INITIAL_QUESTIONS = [
+const RAW_QUESTIONS = [
   {
     id: 'QB-PHY-2041',
     version: 'v2.1',
@@ -704,3 +704,12 @@ export const TYPE_BADGES = {
   'Assertion & Reasoning': { cls: 'bg-amber-100 text-amber-700 border-amber-200', label: 'A & R' },
   'True / False': { cls: 'bg-teal-100 text-teal-700 border-teal-200', label: 'True/False' },
 };
+
+// Demo exam/session tagging (the mock data has no such fields yet). Replace with real values from the API.
+const EXAMS = ['Unit Test', 'Mid Term', 'Half Yearly', 'Final'];
+const SESSIONS = ['2024-25', '2025-26'];
+export const INITIAL_QUESTIONS = RAW_QUESTIONS.map((q, i) => ({
+  exam: EXAMS[i % EXAMS.length],
+  session: SESSIONS[Math.floor(i / EXAMS.length) % SESSIONS.length],
+  ...q,
+}));

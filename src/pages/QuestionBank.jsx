@@ -23,6 +23,8 @@ export default function QuestionBank() {
   const [filterChapter, setFilterChapter] = useState('All');
   const [filterType, setFilterType] = useState('All');
   const [filterMarks, setFilterMarks] = useState('All');
+  const [filterExam, setFilterExam] = useState('All');
+  const [filterSession, setFilterSession] = useState('All');
   const [activeNav, setActiveNav] = useState('questionBank');
 
   // Pagination state
@@ -118,15 +120,17 @@ export default function QuestionBank() {
         (filterSubject === 'All' || q.subject === filterSubject) &&
         (filterChapter === 'All' || q.chapter === filterChapter) &&
         (filterType === 'All' || q.type === filterType) &&
-        (filterMarks === 'All' || String(q.marks) === filterMarks)
+        (filterMarks === 'All' || String(q.marks) === filterMarks) &&
+        (filterExam === 'All' || q.exam === filterExam) &&
+        (filterSession === 'All' || q.session === filterSession)
       );
     });
-  }, [questions, searchTerm, filterClass, filterSubject, filterChapter, filterType, filterMarks]);
+  }, [questions, searchTerm, filterClass, filterSubject, filterChapter, filterType, filterMarks, filterExam, filterSession]);
 
   // Reset to first page when any search or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterClass, filterSubject, filterChapter, filterType, filterMarks]);
+  }, [searchTerm, filterClass, filterSubject, filterChapter, filterType, filterMarks, filterExam, filterSession]);
 
   // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -173,6 +177,8 @@ export default function QuestionBank() {
     setFilterChapter('All');
     setFilterType('All');
     setFilterMarks('All');
+    setFilterExam('All');
+    setFilterSession('All');
     setCurrentPage(1);
   };
 
@@ -327,6 +333,10 @@ export default function QuestionBank() {
                     setFilterType={setFilterType}
                     filterMarks={filterMarks}
                     setFilterMarks={setFilterMarks}
+                    filterExam={filterExam}
+                    setFilterExam={setFilterExam}
+                    filterSession={filterSession}
+                    setFilterSession={setFilterSession}
                   />
                 </div>
 

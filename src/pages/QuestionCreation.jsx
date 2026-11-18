@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   ACADEMIC_PROGRAMS,
   PROGRAM_SUBJECTS,
@@ -98,8 +98,33 @@ export default function QuestionCreation({ showToast }) {
     try { localStorage.setItem('sps_question_type_sets', JSON.stringify(newData)); } catch {}
   };
 
-  // Active Tab: starts with 'types' (Question Types first)
-  const [activeTab, setActiveTab] = useState('types');
+  // Active Tab: persists across page refresh (defaults to 'types')
+  const [activeTab, setActiveTabState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sps_qc_active_tab');
+      return saved === 'questions' || saved === 'types' ? saved : 'types';
+    } catch {
+      return 'types';
+    }
+  });
+  const [isTabGliding, setIsTabGliding] = useState(false);
+  const glideTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (glideTimerRef.current) clearTimeout(glideTimerRef.current);
+    };
+  }, []);
+
+  const setActiveTab = (tab) => {
+    if (tab !== activeTab) {
+      setIsTabGliding(true);
+      if (glideTimerRef.current) clearTimeout(glideTimerRef.current);
+      glideTimerRef.current = setTimeout(() => setIsTabGliding(false), 320);
+    }
+    setActiveTabState(tab);
+    try { localStorage.setItem('sps_qc_active_tab', tab); } catch {}
+  };
 
   // Filter States - Questions Tab
   const [searchTerm, setSearchTerm] = useState('');
@@ -401,35 +426,6 @@ export default function QuestionCreation({ showToast }) {
             Create, curate, and configure syllabus-aligned questions and question types.
           </p>
         </div>
-
-        {/* CLEAN TAB SWITCHER (Starting with Question Types) */}
-        <div className="inline-flex items-center gap-1 bg-[#ECE9E4] p-1 rounded-full border border-stone-200/80 self-start sm:self-auto">
-          <button
-            onClick={() => setActiveTab('types')}
-            className={`px-4 py-1.5 rounded-full text-xs transition-all inline-flex items-center gap-1.5 ${
-              activeTab === 'types'
-                ? 'bg-white text-stone-900 font-bold shadow-xs'
-                : 'text-stone-600 hover:text-stone-900 font-medium'
-            }`}
-          >
-            <span>Question Types ({questionTypeSets.length})</span>
-            {pendingCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-[#72102A] text-white text-[9.5px] font-black leading-none inline-flex items-center justify-center">
-                {pendingCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('questions')}
-            className={`px-4 py-1.5 rounded-full text-xs transition-all ${
-              activeTab === 'questions'
-                ? 'bg-white text-stone-900 font-bold shadow-xs'
-                : 'text-stone-600 hover:text-stone-900 font-medium'
-            }`}
-          >
-            Questions ({questions.length})
-          </button>
-        </div>
       </header>
 
       {/* ── COMPACT OVERVIEW DASHBOARD (4 Interactive KPI Cards) ── */}
@@ -580,9 +576,122 @@ export default function QuestionCreation({ showToast }) {
         </button>
       </div>
 
+      {/* ── iOS LIQUID GLASS SLIDING SEGMENTED CONTROL ── */}
+      <div
+        role="tablist"
+        aria-label="Question Creation Sections"
+        className="relative grid grid-cols-2 w-full rounded-full p-1.5 mb-4 select-none backdrop-blur-xl border border-white/80"
+        style={{
+          background: 'linear-gradient(180deg, rgba(232, 226, 218, 0.78) 0%, rgba(239, 235, 229, 0.65) 100%)',
+          boxShadow:
+            'inset 0 1.5px 3px rgba(0, 0, 0, 0.08), inset 0 0 0 1px rgba(114, 16, 42, 0.05), 0 1px 0 rgba(255, 255, 255, 0.9)',
+        }}
+      >
+        {/* Sliding Liquid Glass Pill Thumb (Silky Spring Glide + Mid-Flight Glass Lensing) */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1.5 bottom-1.5 left-1.5 will-change-transform"
+          style={{
+            width: 'calc(50% - 6px)',
+            transform: activeTab === 'types' ? 'translate3d(0%, 0, 0)' : 'translate3d(100%, 0, 0)',
+            transition: 'transform 580ms cubic-bezier(0.22, 1.16, 0.36, 1)',
+          }}
+        >
+          <div
+            className="w-full h-full rounded-full will-change-transform"
+            style={{
+              transform: isTabGliding ? 'scaleX(1.03) scaleY(1.08)' : 'scaleX(1) scaleY(1)',
+              transition:
+                'transform 340ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 340ms ease, background 340ms ease',
+              background: isTabGliding
+                ? 'linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 250, 252, 0.78) 55%, rgba(247, 236, 240, 0.88) 100%)'
+                : 'linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(252, 248, 249, 0.93) 60%, rgba(246, 237, 240, 0.96) 100%)',
+              backdropFilter: 'blur(16px)',
+              boxShadow: isTabGliding
+                ? '0 10px 26px -4px rgba(114, 16, 42, 0.24), 0 4px 10px -2px rgba(0, 0, 0, 0.08), inset 0 2px 2px rgba(255, 255, 255, 1), inset 0 -1.5px 2px rgba(114, 16, 42, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.9)'
+                : '0 6px 18px -4px rgba(114, 16, 42, 0.16), 0 2px 6px -1px rgba(0, 0, 0, 0.06), inset 0 1.5px 1px rgba(255, 255, 255, 1), inset 0 -1px 1px rgba(114, 16, 42, 0.08), 0 0 0 1px rgba(114, 16, 42, 0.12)',
+            }}
+          />
+        </div>
+
+        {/* Tab 1: Question Types */}
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'types'}
+          onClick={() => setActiveTab('types')}
+          style={{ outline: 'none', boxShadow: 'none' }}
+          className={`relative z-10 py-2 px-4 rounded-full text-xs sm:text-[13px] transition-all duration-500 ease-out flex items-center justify-center gap-2.5 cursor-pointer outline-none focus:outline-none focus-visible:outline-none active:scale-[0.98] ${
+            activeTab === 'types'
+              ? 'text-[#72102A] font-bold'
+              : 'text-stone-500 hover:text-stone-800 font-semibold'
+          }`}
+        >
+          {/* Illuminated iOS-style status icon orb */}
+          <span
+            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-500 ease-out ${
+              activeTab === 'types'
+                ? 'scale-100 bg-gradient-to-b from-[#8B1F3A] to-[#630B22] text-white shadow-[0_2px_8px_rgba(114,16,42,0.42),inset_0_1px_0.5px_rgba(255,255,255,0.35)]'
+                : 'scale-95 bg-stone-300/70 text-stone-500'
+            }`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10m-10 6h16" />
+            </svg>
+          </span>
+          <span>Question Types</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold leading-none transition-all duration-500 ease-out ${
+              activeTab === 'types'
+                ? 'bg-[#72102A] text-white shadow-[0_2px_6px_rgba(114,16,42,0.28)]'
+                : 'bg-black/[0.06] text-stone-600'
+            }`}
+          >
+            {questionTypeSets.length}
+          </span>
+        </button>
+
+        {/* Tab 2: Questions */}
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'questions'}
+          onClick={() => setActiveTab('questions')}
+          style={{ outline: 'none', boxShadow: 'none' }}
+          className={`relative z-10 py-2 px-4 rounded-full text-xs sm:text-[13px] transition-all duration-500 ease-out flex items-center justify-center gap-2.5 cursor-pointer outline-none focus:outline-none focus-visible:outline-none active:scale-[0.98] ${
+            activeTab === 'questions'
+              ? 'text-[#72102A] font-bold'
+              : 'text-stone-500 hover:text-stone-800 font-semibold'
+          }`}
+        >
+          {/* Illuminated iOS-style status icon orb */}
+          <span
+            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-500 ease-out ${
+              activeTab === 'questions'
+                ? 'scale-100 bg-gradient-to-b from-[#8B1F3A] to-[#630B22] text-white shadow-[0_2px_8px_rgba(114,16,42,0.42),inset_0_1px_0.5px_rgba(255,255,255,0.35)]'
+                : 'scale-95 bg-stone-300/70 text-stone-500'
+            }`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </span>
+          <span>Questions</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold leading-none transition-all duration-500 ease-out ${
+              activeTab === 'questions'
+                ? 'bg-[#72102A] text-white shadow-[0_2px_6px_rgba(114,16,42,0.28)]'
+                : 'bg-black/[0.06] text-stone-600'
+            }`}
+          >
+            {questions.length}
+          </span>
+        </button>
+      </div>
+
       {/* ── TAB 1: QUESTION TYPES (First / Default Tab) ── */}
       {activeTab === 'types' && (
-        <div className="space-y-4">
+        <div key="tab-types" className="space-y-4 animate-ios-reveal">
           
           {/* TOP NOTIFICATION CALLOUT BANNER (New Course Assignments) */}
           {!isBannerDismissed && pendingCount > 0 && (
@@ -937,7 +1046,7 @@ export default function QuestionCreation({ showToast }) {
 
       {/* ── TAB 2: QUESTIONS ── */}
       {activeTab === 'questions' && (
-        <div className="space-y-4">
+        <div key="tab-questions" className="space-y-4 animate-ios-reveal">
           
           {/* FILTER BAR FOR QUESTIONS (Left-Aligned with Custom Dropdowns) */}
           <div className="bg-white border border-stone-200/80 rounded-2xl px-5 pt-3.5 pb-4 shadow-[0_1px_4px_rgba(0,0,0,0.03)] flex flex-wrap items-end justify-start gap-4">

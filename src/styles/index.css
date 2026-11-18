@@ -214,6 +214,21 @@ div:focus:not(:focus-visible) {
   animation: scaleIn 0.2s ease-out;
 }
 
+@keyframes iosLiquidReveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-ios-reveal {
+  animation: iosLiquidReveal 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* ── Text Selection ── */
 ::selection {
   background-color: var(--brand);

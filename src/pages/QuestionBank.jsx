@@ -24,7 +24,38 @@ export default function QuestionBank() {
   const [filterChapter, setFilterChapter] = useState('All');
   const [filterType, setFilterType] = useState('All');
   const [filterMarks, setFilterMarks] = useState('All');
-  const [activeNav, setActiveNav] = useState('questionBank');
+  const [activeNav, setActiveNav] = useState(() => {
+    const validIds = new Set(NAV_ITEMS.map((item) => item.id));
+    try {
+      const hashId = window.location.hash.replace(/^#/, '');
+      if (hashId && validIds.has(hashId)) return hashId;
+      const saved = localStorage.getItem('sps_active_nav');
+      if (saved && validIds.has(saved)) return saved;
+    } catch {}
+    return 'questionBank';
+  });
+
+  // Persist active section across refreshes and sync with URL hash
+  useEffect(() => {
+    try {
+      localStorage.setItem('sps_active_nav', activeNav);
+      if (window.location.hash !== `#${activeNav}`) {
+        window.history.replaceState(null, '', `#${activeNav}`);
+      }
+    } catch {}
+  }, [activeNav]);
+
+  useEffect(() => {
+    const validIds = new Set(NAV_ITEMS.map((item) => item.id));
+    const onHashChange = () => {
+      const hashId = window.location.hash.replace(/^#/, '');
+      if (hashId && validIds.has(hashId)) {
+        setActiveNav(hashId);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);

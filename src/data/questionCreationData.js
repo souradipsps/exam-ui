@@ -32,7 +32,7 @@ export const ACADEMIC_PROGRAMS = [
 
 export const PROGRAM_SUBJECTS = {
   "Class 9": ["Mathematics", "Physics", "Chemistry", "Biology", "English Literature"],
-  "Class 10": ["Mathematics", "Physics", "Chemistry", "Biology", "English Literature"],
+  "Class 10": ["Mathematics", "Physics", "Chemistry", "Biology", "English Literature", "Environmental Studies"],
   "Class 11": ["English Core", "Physics", "Chemistry", "Mathematics", "Humanities Studies"],
   "Class 11 - Science": ["Physics", "Chemistry", "Mathematics", "Computer Science"],
   "Class 12 (Science)": ["Organic Chemistry (CH-204)", "Physics", "Chemistry", "Mathematics", "Computer Science"],
@@ -67,6 +67,11 @@ export const SESSIONS_LIST = ["2026-27", "2025-26", "2027-28"];
 
 // Fallback chapter lists when creating a new chapter-wise question type set
 export const DEFAULT_CHAPTERS_BY_SUBJECT = {
+  "Environmental Studies": [
+    "Our Environment & Ecosystem",
+    "Management of Natural Resources",
+    "Sustainable Development & Conservation"
+  ],
   "Mathematics": [
     "Sets & Relations",
     "Functions & Graphs",
@@ -1921,8 +1926,30 @@ export const MASTER_QUESTION_TYPES = [
 export const INITIAL_QUESTION_TYPE_SETS = [
   // New Requests Arrived (Pending Teacher Setup)
   {
+    id: "QTS-REQ-10",
+    session: "2026-27",
+    dueDate: "25 Nov 2026",
+    program: "Class 10",
+    subject: "Environmental Studies",
+    chapters: [
+      "Our Environment & Ecosystem",
+      "Management of Natural Resources",
+      "Sustainable Development & Conservation"
+    ],
+    assessmentTag: "Unit Test I",
+    requestedBy: "Exam Controller",
+    requestedAt: "Just now",
+    department: "Science",
+    assignedTeacher: "Current Educator (You)",
+    status: "Pending Assignment",
+    isNewRequest: true,
+    updatedAt: "Just now",
+    questionTypes: []
+  },
+  {
     id: "QTS-REQ-01",
     session: "2026-27",
+    dueDate: "25 Nov 2026",
     program: "Class 11",
     subject: "English Core",
     chapters: DEFAULT_CHAPTERS_BY_SUBJECT["English Core"],
@@ -1939,9 +1966,14 @@ export const INITIAL_QUESTION_TYPE_SETS = [
   {
     id: "QTS-REQ-02",
     session: "2026-27",
+    dueDate: "28 Nov 2026",
     program: "Class 11",
     subject: "English Core",
-    chapters: DEFAULT_CHAPTERS_BY_SUBJECT["English Core"],
+    chapters: [
+      "The Portrait of a Lady",
+      "We're Not Afraid to Die",
+      "Discovering Tut: The Saga Continues"
+    ],
     assessmentTag: "Term I Assessment",
     requestedBy: "Exam Controller",
     requestedAt: "Just now",
@@ -1954,6 +1986,7 @@ export const INITIAL_QUESTION_TYPE_SETS = [
   },
   {
     id: "QTS-REQ-03",
+    dueDate: "30 Nov 2026",
     program: "Class 12 (Science)",
     subject: "Organic Chemistry (CH-204)",
     chapters: DEFAULT_CHAPTERS_BY_SUBJECT["Organic Chemistry (CH-204)"],
@@ -1969,6 +2002,7 @@ export const INITIAL_QUESTION_TYPE_SETS = [
   },
   {
     id: "QTS-REQ-04",
+    dueDate: "30 Nov 2026",
     program: "Class 12 (Science)",
     subject: "Organic Chemistry (CH-204)",
     chapters: DEFAULT_CHAPTERS_BY_SUBJECT["Organic Chemistry (CH-204)"],
@@ -1984,6 +2018,7 @@ export const INITIAL_QUESTION_TYPE_SETS = [
   },
   {
     id: "QTS-REQ-05",
+    dueDate: "02 Dec 2026",
     program: "B.Tech - Computer Science Engineering",
     subject: "Operating Systems (CS-305)",
     chapters: DEFAULT_CHAPTERS_BY_SUBJECT["Operating Systems (CS-305)"],
@@ -1999,6 +2034,7 @@ export const INITIAL_QUESTION_TYPE_SETS = [
   },
   {
     id: "QTS-REQ-06",
+    dueDate: "24 Nov 2026",
     program: "Class 10",
     subject: "Chemistry",
     chapters: DEFAULT_CHAPTERS_BY_SUBJECT["Chemistry"],
@@ -2014,6 +2050,7 @@ export const INITIAL_QUESTION_TYPE_SETS = [
   },
   {
     id: "QTS-REQ-07",
+    dueDate: "05 Dec 2026",
     program: "B.Tech - Computer Science Engineering",
     subject: "Database Management (CS-301)",
     chapters: DEFAULT_CHAPTERS_BY_SUBJECT["Database Management (CS-301)"],
@@ -2029,6 +2066,7 @@ export const INITIAL_QUESTION_TYPE_SETS = [
   },
   {
     id: "QTS-REQ-08",
+    dueDate: "26 Nov 2026",
     program: "Class 9",
     subject: "Mathematics",
     chapters: DEFAULT_CHAPTERS_BY_SUBJECT["Mathematics"],
@@ -2044,6 +2082,7 @@ export const INITIAL_QUESTION_TYPE_SETS = [
   },
   {
     id: "QTS-REQ-09",
+    dueDate: "28 Nov 2026",
     program: "Class 11",
     subject: "Physics",
     chapters: DEFAULT_CHAPTERS_BY_SUBJECT["Physics"],
@@ -2061,6 +2100,7 @@ export const INITIAL_QUESTION_TYPE_SETS = [
   // Configured Courses
   {
     id: "QTS-SET-01",
+    dueDate: "15 Nov 2026",
     program: "B.Tech - Computer Science Engineering",
     subject: "Artificial Intelligence (CS-401)",
     chapters: DEFAULT_CHAPTERS_BY_SUBJECT["Artificial Intelligence (CS-401)"],
@@ -2094,6 +2134,7 @@ export const INITIAL_QUESTION_TYPE_SETS = [
   },
   {
     id: "QTS-SET-02",
+    dueDate: "18 Nov 2026",
     program: "B.Sc - Physics & Applied Sciences",
     subject: "Quantum Mechanics (PH-301)",
     chapters: DEFAULT_CHAPTERS_BY_SUBJECT["Quantum Mechanics (PH-301)"],
@@ -2127,6 +2168,7 @@ export const INITIAL_QUESTION_TYPE_SETS = [
   },
   {
     id: "QTS-SET-03",
+    dueDate: "20 Nov 2026",
     program: "B.Sc - Mathematics & Computing",
     subject: "Linear Algebra (MA-102)",
     chapters: DEFAULT_CHAPTERS_BY_SUBJECT["Linear Algebra (MA-102)"],
@@ -2160,6 +2202,7 @@ export const INITIAL_QUESTION_TYPE_SETS = [
   },
   {
     id: "QTS-SET-04",
+    dueDate: "01 Dec 2026",
     program: "Class 10",
     subject: "Physics",
     chapters: DEFAULT_CHAPTERS_BY_SUBJECT["Physics"],
@@ -2193,6 +2236,7 @@ export const INITIAL_QUESTION_TYPE_SETS = [
   },
   {
     id: "QTS-SET-05",
+    dueDate: "10 Nov 2026",
     program: "Class 10",
     subject: "Mathematics",
     chapters: DEFAULT_CHAPTERS_BY_SUBJECT["Mathematics"],

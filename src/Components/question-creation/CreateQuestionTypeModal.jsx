@@ -9,6 +9,8 @@ import {
 } from '../../data/questionCreationData.js';
 import CustomDropdown from './CustomDropdown.jsx';
 
+const ALL_CHAPTERS_KEY = '__ALL_CHAPTERS__';
+
 const getCategoryBadgeStyle = (category = '') => {
   const c = category.toLowerCase();
   if (c.includes('objective')) return 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]';
@@ -41,6 +43,24 @@ const getCategoryDotColor = (category = '') => {
   return 'bg-stone-400';
 };
 
+const FALLBACK_DUE_DATES = {
+  'QTS-REQ-10': '25 Nov 2026',
+  'QTS-REQ-01': '25 Nov 2026',
+  'QTS-REQ-02': '28 Nov 2026',
+  'QTS-REQ-03': '30 Nov 2026',
+  'QTS-REQ-04': '30 Nov 2026',
+  'QTS-REQ-05': '02 Dec 2026',
+  'QTS-REQ-06': '24 Nov 2026',
+  'QTS-REQ-07': '05 Dec 2026',
+  'QTS-REQ-08': '26 Nov 2026',
+  'QTS-REQ-09': '28 Nov 2026',
+  'QTS-SET-01': '15 Nov 2026',
+  'QTS-SET-02': '18 Nov 2026',
+  'QTS-SET-03': '20 Nov 2026',
+  'QTS-SET-04': '01 Dec 2026',
+  'QTS-SET-05': '10 Nov 2026',
+};
+
 const groupTypesByCategory = (types = [], categoryOrder = []) => {
   const grouped = new Map();
   types.forEach((t) => {
@@ -65,18 +85,10 @@ const getFallbackChapters = (subject) => {
 };
 
 const buildInitialChapters = (editingItem, subject) => {
-  const fallback = getFallbackChapters(subject);
-  if (editingItem && Array.isArray(editingItem.chapters) && editingItem.chapters.length >= fallback.length) {
+  if (editingItem && Array.isArray(editingItem.chapters) && editingItem.chapters.length > 0) {
     return [...editingItem.chapters];
   }
-  if (editingItem && Array.isArray(editingItem.chapters) && editingItem.chapters.length > 0) {
-    const combined = [...editingItem.chapters];
-    fallback.forEach((ch) => {
-      if (!combined.includes(ch)) combined.push(ch);
-    });
-    return combined;
-  }
-  return fallback;
+  return getFallbackChapters(subject);
 };
 
 const buildInitialChapterMap = (editingItem, chaptersList) => {
@@ -121,10 +133,17 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
   const [catalogSearch, setCatalogSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  const dueDate =
+    editingItem?.dueDate ||
+    (editingItem?.id && FALLBACK_DUE_DATES[editingItem.id]) ||
+    '28 Nov 2026';
 
   // Sync local state whenever modal opens or target course changes
   useEffect(() => {
     if (!isOpen) return;
+    setShowClearConfirm(false);
     const subj =
       editingItem?.subject ||
       (PROGRAM_SUBJECTS[ACADEMIC_PROGRAMS[0]] ? PROGRAM_SUBJECTS[ACADEMIC_PROGRAMS[0]][0] : '');
@@ -201,45 +220,20 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
     }));
   }, [categories, categoryCounts]);
 
+  const isAllChapters = activeChapter === ALL_CHAPTERS_KEY;
+
   const chapterOptions = useMemo(() => {
-    return chapters.map((ch, idx) => {
-      const count = (chapterQuestionTypes[ch] || []).length;
-      return {
+    return [
+      {
+        value: ALL_CHAPTERS_KEY,
+        label: 'All Chapters',
+      },
+      ...chapters.map((ch, idx) => ({
         value: ch,
         label: `Ch ${idx + 1}: ${ch}`,
-        badge: count > 0 ? count : 'Pending',
-        tone: count > 0 ? 'emerald' : 'amber',
-        dotColor: count > 0 ? 'bg-emerald-500' : 'bg-amber-500',
-      };
-    });
-  }, [chapters, chapterQuestionTypes]);
-
-  const activeChapterTypes = useMemo(
-    () => chapterQuestionTypes[activeChapter] || [],
-    [chapterQuestionTypes, activeChapter]
-  );
-
-  const activeSelectedIds = useMemo(
-    () => new Set(activeChapterTypes.map((t) => t.id)),
-    [activeChapterTypes]
-  );
-
-  // Selected count filtered by the active category (or total for 'All')
-  const currentCategorySelectedCount = useMemo(() => {
-    if (categoryFilter === 'All') {
-      return activeChapterTypes.length;
-    }
-    return activeChapterTypes.filter((t) => t.category === categoryFilter).length;
-  }, [activeChapterTypes, categoryFilter]);
-
-  // Trigger auto-scroll on active chapter change or question type assignment
-  useEffect(() => {
-    if (!isOpen) return;
-    const timer = setTimeout(() => {
-      scrollToActiveChapter(true);
-    }, 40);
-    return () => clearTimeout(timer);
-  }, [isOpen, activeChapter, activeChapterTypes.length, scrollToActiveChapter]);
+      })),
+    ];
+  }, [chapters]);
 
   // Deduplicated unique types across all chapters + aggregate stats
   const { uniqueAllTypes, totalAssignments, configuredChaptersCount } = useMemo(() => {
@@ -264,6 +258,57 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
       configuredChaptersCount: configured,
     };
   }, [chapters, chapterQuestionTypes]);
+
+  // Types that are assigned to EVERY chapter
+  const typesInAllChapters = useMemo(() => {
+    if (chapters.length === 0) return [];
+    return uniqueAllTypes.filter((t) =>
+      chapters.every((ch) => (chapterQuestionTypes[ch] || []).some((item) => item.id === t.id))
+    );
+  }, [chapters, chapterQuestionTypes, uniqueAllTypes]);
+
+  const activeChapterTypes = useMemo(() => {
+    if (isAllChapters) {
+      return typesInAllChapters;
+    }
+    return chapterQuestionTypes[activeChapter] || [];
+  }, [isAllChapters, typesInAllChapters, chapterQuestionTypes, activeChapter]);
+
+  const activeSelectedIds = useMemo(() => {
+    if (isAllChapters) {
+      const set = new Set();
+      chapters.forEach((ch) => {
+        (chapterQuestionTypes[ch] || []).forEach((t) => set.add(t.id));
+      });
+      return set;
+    }
+    return new Set(activeChapterTypes.map((t) => t.id));
+  }, [isAllChapters, chapters, chapterQuestionTypes, activeChapterTypes]);
+
+  // Selected count filtered by the active category (or total for 'All')
+  const currentCategorySelectedCount = useMemo(() => {
+    if (isAllChapters) {
+      if (categoryFilter === 'All') {
+        return activeSelectedIds.size;
+      }
+      return MASTER_QUESTION_TYPES.filter(
+        (m) => m.category === categoryFilter && activeSelectedIds.has(m.id)
+      ).length;
+    }
+    if (categoryFilter === 'All') {
+      return activeChapterTypes.length;
+    }
+    return activeChapterTypes.filter((t) => t.category === categoryFilter).length;
+  }, [isAllChapters, activeSelectedIds, categoryFilter, activeChapterTypes]);
+
+  // Trigger auto-scroll on active chapter change or question type assignment
+  useEffect(() => {
+    if (!isOpen || isAllChapters) return;
+    const timer = setTimeout(() => {
+      scrollToActiveChapter(true);
+    }, 40);
+    return () => clearTimeout(timer);
+  }, [isOpen, isAllChapters, activeChapter, activeChapterTypes.length, scrollToActiveChapter]);
 
   const filteredMasterTypes = useMemo(() => {
     const q = catalogSearch.trim().toLowerCase();
@@ -308,6 +353,36 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
 
   const toggleMasterType = (mType) => {
     if (!activeChapter) return;
+
+    if (isAllChapters) {
+      setChapterQuestionTypes((prev) => {
+        const allHaveIt =
+          chapters.length > 0 &&
+          chapters.every((ch) => (prev[ch] || []).some((t) => t.id === mType.id));
+        const next = { ...prev };
+        chapters.forEach((ch) => {
+          const current = next[ch] || [];
+          if (allHaveIt) {
+            next[ch] = current.filter((t) => t.id !== mType.id);
+          } else {
+            if (!current.some((t) => t.id === mType.id)) {
+              next[ch] = [
+                ...current,
+                {
+                  id: mType.id,
+                  name: mType.name,
+                  category: mType.category,
+                  description: mType.description,
+                },
+              ];
+            }
+          }
+        });
+        return next;
+      });
+      return;
+    }
+
     setChapterQuestionTypes((prev) => {
       const current = prev[activeChapter] || [];
       const exists = current.some((t) => t.id === mType.id);
@@ -335,6 +410,15 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
 
   const handleClearActiveChapter = () => {
     if (!activeChapter) return;
+    if (isAllChapters) {
+      setChapterQuestionTypes(
+        chapters.reduce((acc, ch) => {
+          acc[ch] = [];
+          return acc;
+        }, {})
+      );
+      return;
+    }
     setChapterQuestionTypes((prev) => ({ ...prev, [activeChapter]: [] }));
   };
 
@@ -366,6 +450,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
       chapterQuestionTypes,
       questionTypes: uniqueAllTypes,
       assessmentTag: selectedExam,
+      dueDate: editingItem?.dueDate || dueDate,
       requestedBy: editingItem?.requestedBy,
       requestedAt: editingItem?.requestedAt,
       isNewRequest: false,
@@ -382,16 +467,16 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
   return (
     /* Covers ONLY the main workspace area — Top NavBar (60px) & Left Sidebar (240px) remain crisp & unblurred */
     <div
-      className="fixed top-[60px] left-0 md:left-[240px] right-0 bottom-0 z-40 bg-[#FAF8F5]/72 backdrop-blur-md p-2.5 sm:p-4 lg:p-5 flex flex-col overflow-hidden"
+      className="fixed top-[60px] left-0 md:left-[240px] right-0 bottom-0 z-40 bg-black/60 backdrop-blur-sm p-2.5 sm:p-4 lg:p-5 flex flex-col overflow-hidden"
       role="dialog"
       aria-modal="true"
       aria-label={isEditingExisting ? 'Edit Question Types' : 'Add Question Types from Master Data'}
     >
-      {/* Full-Area Modern Frosted Glass Form Surface */}
-      <div className="w-full h-full bg-white/85 backdrop-blur-xl rounded-3xl border border-white/95 shadow-[0_14px_44px_-10px_rgba(24,24,27,0.12),0_0_0_1px_rgba(232,226,217,0.9)] flex flex-col overflow-hidden animate-ios-reveal">
+      {/* Full-Area Modern Form Surface */}
+      <div className="w-full h-full bg-[#FAF8F5] rounded-3xl border border-white/60 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden animate-ios-reveal">
 
         {/* ── COMPACT MODERN HEADER ── */}
-        <div className="px-4 sm:px-6 py-3 bg-white/85 backdrop-blur-lg border-b border-[#E8E2D9] flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+        <div className="px-4 sm:px-6 py-3 bg-white border-b border-[#E8E2D9] flex flex-wrap items-center justify-between gap-2.5 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#8B1F3A] to-[#5C0C21] text-white flex items-center justify-center font-bold text-[11px] shadow-sm shrink-0">
               QT
@@ -427,7 +512,15 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0">
+            {/* Due Date Data Badge in Top Bar */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF9F7] border border-stone-200/90 text-stone-700 font-medium text-xs shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+              <svg className="w-3.5 h-3.5 text-stone-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>Due Date: <strong className="text-stone-900">{dueDate}</strong></span>
+            </div>
+
             <button
               type="button"
               onClick={onClose}
@@ -575,19 +668,27 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                       Question Types for :
                     </span>
                     <span className="px-2.5 py-0.5 rounded-full bg-[#FAF0F3] text-[#72102A] border border-[#F2D7DF] text-[11px] font-bold truncate max-w-[450px]">
-                      Ch {activeChapterIdx + 1}: {activeChapter}
+                      {isAllChapters
+                        ? `All Chapters (${chapters.length} Chapters)`
+                        : `Ch ${activeChapterIdx + 1}: ${activeChapter}`}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {activeChapterTypes.length > 0 && (
+                    {((isAllChapters && uniqueAllTypes.length > 0) ||
+                      (!isAllChapters && activeChapterTypes.length > 0)) && (
                       <button
                         type="button"
-                        onClick={handleClearActiveChapter}
+                        onClick={() => setShowClearConfirm(true)}
                         style={{ outline: 'none' }}
                         className="text-[11px] font-semibold text-stone-500 hover:text-rose-600 cursor-pointer"
+                        title={
+                          isAllChapters
+                            ? 'Remove all assigned question types from all chapters'
+                            : 'Remove all assigned question types from this chapter'
+                        }
                       >
-                        Clear Chapter
+                        {isAllChapters ? 'Clear All Chapters' : 'Clear Chapter'}
                       </button>
                     )}
                   </div>
@@ -639,7 +740,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                     className="w-full sm:w-[270px] md:w-[295px] lg:w-[310px] shrink-0"
                   />
 
-                  {/* Category Filter Dropdown */}
+                  {/* Category Filter Dropdown (Widened to display full category names without truncation) */}
                   <CustomDropdown
                     value={categoryFilter}
                     onChange={(val) => {
@@ -650,7 +751,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                     variant={categoryFilter !== 'All' ? 'maroon' : 'default'}
                     rounded="full"
                     placeholder="All Categories"
-                    className="w-full sm:w-[155px] md:w-[165px] shrink-0"
+                    className="w-full sm:w-[205px] md:w-[220px] lg:w-[230px] shrink-0"
                   />
 
                   {/* Selected Only Toggle (Enabled across all categories with category-specific count) */}
@@ -705,7 +806,9 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                   <div className="flex-1 min-h-[160px] flex flex-col items-center justify-center text-center text-xs text-stone-400 rounded-2xl border border-dashed border-stone-200 bg-stone-50/40 p-6">
                     <p className="font-semibold text-stone-500 m-0">
                       {showSelectedOnly
-                        ? `No question types selected for ${activeChapter} yet.`
+                        ? isAllChapters
+                          ? 'No question types assigned yet across chapters.'
+                          : `No question types selected for ${activeChapter} yet.`
                         : 'No question types match your search or category filter.'}
                     </p>
                     {(catalogSearch || categoryFilter !== 'All' || showSelectedOnly) && (
@@ -726,37 +829,57 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                   <div className="flex-1 min-h-[240px] lg:min-h-0 overflow-y-auto custom-scrollbar pr-1">
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
                       {filteredMasterTypes.map((mType) => {
-                        const isSelected = activeSelectedIds.has(mType.id);
+                        const assignedCount = chapters.filter((ch) =>
+                          (chapterQuestionTypes[ch] || []).some((t) => t.id === mType.id)
+                        ).length;
+                        const isAllAssigned = chapters.length > 0 && assignedCount === chapters.length;
+                        const isPartiallyAssigned = assignedCount > 0 && assignedCount < chapters.length;
+                        const isSelected = isAllChapters ? isAllAssigned : activeSelectedIds.has(mType.id);
+
                         return (
                           <button
                             key={mType.id}
                             type="button"
                             onClick={() => toggleMasterType(mType)}
                             style={{ outline: 'none' }}
-                            className={`text-left p-3 rounded-xl border transition-all duration-150 cursor-pointer flex flex-col justify-between gap-2 group ${isSelected
-                              ? 'bg-gradient-to-br from-[#FDF4F6] via-white to-[#FAF0F3]/70 border-[#72102A] ring-1 ring-[#72102A]/15 shadow-[0_4px_14px_-6px_rgba(114,16,42,0.2)]'
-                              : 'bg-white/90 border-stone-200/85 hover:border-[#72102A]/35 hover:bg-white hover:shadow-xs'
-                              }`}
+                            className={`text-left p-3 rounded-xl border transition-all duration-150 cursor-pointer flex flex-col justify-between gap-2 group ${
+                              isSelected
+                                ? 'bg-gradient-to-br from-[#FDF4F6] via-white to-[#FAF0F3]/70 border-[#72102A] ring-1 ring-[#72102A]/15 shadow-[0_4px_14px_-6px_rgba(114,16,42,0.2)]'
+                                : isPartiallyAssigned && isAllChapters
+                                ? 'bg-gradient-to-br from-[#FFFBEB] via-white to-[#FEF3C7]/40 border-amber-400 ring-1 ring-amber-400/20 shadow-xs'
+                                : 'bg-white/90 border-stone-200/85 hover:border-[#72102A]/35 hover:bg-white hover:shadow-xs'
+                            }`}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <span
-                                className={`font-bold text-[12px] leading-snug transition-colors line-clamp-1 ${isSelected ? 'text-[#72102A]' : 'text-stone-900 group-hover:text-[#72102A]'
-                                  }`}
+                                className={`font-bold text-[12px] leading-snug transition-colors line-clamp-1 ${
+                                  isSelected
+                                    ? 'text-[#72102A]'
+                                    : isPartiallyAssigned && isAllChapters
+                                    ? 'text-amber-900 group-hover:text-[#72102A]'
+                                    : 'text-stone-900 group-hover:text-[#72102A]'
+                                }`}
                                 title={mType.name}
                               >
                                 {mType.name}
                               </span>
 
                               <span
-                                className={`w-4.5 h-4.5 min-w-[18px] min-h-[18px] rounded-full flex items-center justify-center shrink-0 transition-all duration-150 ${isSelected
-                                  ? 'bg-[#72102A] text-white scale-105'
-                                  : 'bg-white border-2 border-stone-300 group-hover:border-[#72102A]/50'
-                                  }`}
+                                className={`w-4.5 h-4.5 min-w-[18px] min-h-[18px] rounded-full flex items-center justify-center shrink-0 transition-all duration-150 ${
+                                  isSelected
+                                    ? 'bg-[#72102A] text-white scale-105'
+                                    : isPartiallyAssigned && isAllChapters
+                                    ? 'bg-amber-500 text-white border-2 border-amber-500'
+                                    : 'bg-white border-2 border-stone-300 group-hover:border-[#72102A]/50'
+                                }`}
                               >
                                 {isSelected && (
                                   <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                   </svg>
+                                )}
+                                {!isSelected && isPartiallyAssigned && isAllChapters && (
+                                  <span className="w-2 h-0.5 bg-white rounded-full" />
                                 )}
                               </span>
                             </div>
@@ -774,12 +897,19 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                                 {mType.category}
                               </span>
                               <span
-                                className={`text-[10px] font-bold transition-opacity ${isSelected
-                                  ? 'text-[#72102A] opacity-100'
-                                  : 'text-stone-400 opacity-0 group-hover:opacity-100'
-                                  }`}
+                                className={`text-[10px] font-bold transition-opacity ${
+                                  isSelected
+                                    ? 'text-[#72102A] opacity-100'
+                                    : isPartiallyAssigned && isAllChapters
+                                    ? 'text-amber-800 opacity-100'
+                                    : 'text-stone-400 opacity-0 group-hover:opacity-100'
+                                }`}
                               >
-                                {isSelected ? 'Added' : '+ Add'}
+                                {isSelected
+                                  ? isAllChapters ? 'All Chapters' : 'Added'
+                                  : isPartiallyAssigned && isAllChapters
+                                  ? `${assignedCount}/${chapters.length} Chapters`
+                                  : isAllChapters ? '+ Add All' : '+ Add'}
                               </span>
                             </div>
                           </button>
@@ -848,6 +978,59 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                   ref={chapterListContainerRef}
                   className="relative flex-1 min-h-[220px] lg:min-h-0 py-2 overflow-y-auto custom-scrollbar space-y-2.5 pr-0.5"
                 >
+                  {/* All Chapters Master Selector Card */}
+                  <div
+                    ref={isAllChapters ? activeChapterCardRef : null}
+                    onClick={() => {
+                      setActiveChapter(ALL_CHAPTERS_KEY);
+                      setShowSelectedOnly(false);
+                    }}
+                    className={`rounded-2xl border p-3 transition-all duration-150 cursor-pointer ${
+                      isAllChapters
+                        ? 'bg-[#FFF9FA] border-[#72102A]/55 shadow-[0_4px_16px_-4px_rgba(114,16,42,0.18)] ring-1 ring-[#72102A]/20'
+                        : 'bg-white/95 hover:bg-[#FAF8F5] border-stone-200/85 hover:border-[#72102A]/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg leading-none shrink-0 ${
+                            isAllChapters
+                              ? 'bg-[#72102A] text-white shadow-xs'
+                              : 'bg-stone-200 text-stone-700'
+                          }`}
+                        >
+                          ALL
+                        </span>
+                        <span
+                          className={`text-xs font-extrabold truncate ${
+                            isAllChapters ? 'text-[#72102A]' : 'text-stone-850'
+                          }`}
+                        >
+                          All Chapters
+                        </span>
+                      </div>
+
+                      <span
+                        className={`text-[10.5px] font-bold px-2.5 py-0.5 rounded-full shrink-0 ${
+                          typesInAllChapters.length > 0
+                            ? 'bg-[#FAF0F3] text-[#72102A] border border-[#F2D7DF]'
+                            : 'bg-stone-50 text-stone-500 border border-stone-200'
+                        }`}
+                      >
+                        {typesInAllChapters.length > 0
+                          ? `${typesInAllChapters.length} Shared`
+                          : `${uniqueAllTypes.length} Total`}
+                      </span>
+                    </div>
+
+                    <p className="text-[10.5px] text-stone-500 mt-1 mb-0 pl-0.5">
+                      {isAllChapters
+                        ? 'Selecting cards assigns question types to all chapters together.'
+                        : 'Click to select and assign question types to all chapters at once.'}
+                    </p>
+                  </div>
+
                   {chapters.map((ch, idx) => {
                     const isActive = ch === activeChapter;
                     const types = chapterQuestionTypes[ch] || [];
@@ -991,6 +1174,86 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
         </div>
 
       </div>
+
+      {/* Clear Chapter Confirmation Popup Warning */}
+      {showClearConfirm && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowClearConfirm(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-xl bg-white rounded-3xl border border-stone-200 shadow-2xl overflow-hidden p-6 sm:p-7 space-y-5 animate-ios-reveal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 border border-red-200 flex items-center justify-center shrink-0 shadow-xs">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg sm:text-[19px] font-black text-stone-900 m-0 leading-tight">
+                  {isAllChapters ? 'Clear Question Types for All Chapters?' : 'Clear Question Types for this Chapter?'}
+                </h3>
+                <p className="text-sm text-stone-600 mt-2 leading-relaxed m-0">
+                  {isAllChapters ? (
+                    <>
+                      You are about to remove all <strong>{totalAssignments}</strong> question type assignments across all <strong>{chapters.length}</strong> chapters.
+                    </>
+                  ) : (
+                    <>
+                      You are about to remove all <strong>{activeChapterTypes.length}</strong> assigned question type{activeChapterTypes.length === 1 ? '' : 's'} from:
+                    </>
+                  )}
+                </p>
+                <div className="mt-3 px-3.5 py-2.5 rounded-2xl bg-[#FAF0F3] border border-[#F2D7DF] text-[13.5px] font-black text-[#72102A] truncate">
+                  {isAllChapters ? `All ${chapters.length} Chapters` : `Ch ${activeChapterIdx + 1}: ${activeChapter}`}
+                </div>
+                <div className="mt-3.5 p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200 text-xs text-amber-950 space-y-1.5">
+                  <div className="flex items-start gap-2">
+                    <span className="font-black text-amber-700">•</span>
+                    <span>
+                      {isAllChapters
+                        ? 'All chapters will reset to Pending status.'
+                        : "This chapter's configuration status will reset to Pending."}
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="font-black text-amber-700">•</span>
+                    <span>You can re-add question types from the catalogue at any time.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-100">
+              <button
+                type="button"
+                onClick={() => setShowClearConfirm(false)}
+                className="h-10 px-5 rounded-full border border-stone-300 bg-white hover:bg-stone-100 text-stone-700 text-sm font-bold transition-all cursor-pointer shadow-2xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleClearActiveChapter();
+                  setShowClearConfirm(false);
+                }}
+                className="h-10 px-6 sm:px-7 rounded-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-extrabold transition-all shadow-md shadow-red-600/30 hover:shadow-lg active:scale-95 cursor-pointer inline-flex items-center gap-2 border border-red-700/20"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span>{isAllChapters ? 'Yes, Clear All Chapters' : 'Yes, Clear Chapter'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

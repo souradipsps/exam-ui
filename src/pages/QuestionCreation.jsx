@@ -51,6 +51,26 @@ export const getQuestionTypeBadgeStyle = (typeName = '') => {
   return 'bg-[#F5E6EA] text-[#72102A] border-[#E6C4CD] hover:bg-[#E6C4CD]/60';
 };
 
+export const FALLBACK_DUE_DATES = {
+  'QTS-REQ-10': '25 Nov 2026',
+  'QTS-REQ-01': '25 Nov 2026',
+  'QTS-REQ-02': '28 Nov 2026',
+  'QTS-REQ-03': '30 Nov 2026',
+  'QTS-REQ-04': '30 Nov 2026',
+  'QTS-REQ-05': '02 Dec 2026',
+  'QTS-REQ-06': '24 Nov 2026',
+  'QTS-REQ-07': '05 Dec 2026',
+  'QTS-REQ-08': '26 Nov 2026',
+  'QTS-REQ-09': '28 Nov 2026',
+  'QTS-SET-01': '15 Nov 2026',
+  'QTS-SET-02': '18 Nov 2026',
+  'QTS-SET-03': '20 Nov 2026',
+  'QTS-SET-04': '01 Dec 2026',
+  'QTS-SET-05': '10 Nov 2026',
+};
+
+export const getFallbackDueDate = (id) => FALLBACK_DUE_DATES[id] || '28 Nov 2026';
+
 export default function QuestionCreation({ showToast }) {
   // Questions Data
   const [questions, setQuestions] = useState(() => {
@@ -71,22 +91,25 @@ export default function QuestionCreation({ showToast }) {
         const initById = new Map(INITIAL_QUESTION_TYPE_SETS.map(init => [init.id, init]));
         const hydrated = parsed.map(item => {
           const ref = initById.get(item.id);
-          if (!ref) return item;
-          const mergedChapters =
-            ref.chapters && ref.chapters.length > (item.chapters?.length || 0)
-              ? ref.chapters
-              : (item.chapters && item.chapters.length > 0 ? item.chapters : ref.chapters || []);
+          if (!ref) return { ...item, dueDate: item.dueDate || getFallbackDueDate(item.id) };
+          const isPending = (!item.questionTypes || item.questionTypes.length === 0) && item.status !== 'Draft';
+          const mergedChapters = isPending && ref.chapters
+            ? ref.chapters
+            : (ref.chapters && ref.chapters.length > (item.chapters?.length || 0)
+                ? ref.chapters
+                : (item.chapters && item.chapters.length > 0 ? item.chapters : ref.chapters || []));
           return {
             ...item,
             session: item.session || ref.session || '2026-27',
             assessmentTag: item.assessmentTag || ref.assessmentTag,
             chapters: mergedChapters,
             chapterQuestionTypes: item.chapterQuestionTypes || ref.chapterQuestionTypes,
+            dueDate: item.dueDate || ref.dueDate || getFallbackDueDate(item.id),
           };
         });
         const existingIds = new Set(hydrated.map(p => p.id));
         const missing = INITIAL_QUESTION_TYPE_SETS.filter(init => !existingIds.has(init.id));
-        return missing.length > 0 ? [...hydrated, ...missing] : hydrated;
+        return missing.length > 0 ? [...missing, ...hydrated] : hydrated;
       }
       return INITIAL_QUESTION_TYPE_SETS;
     } catch {
@@ -279,14 +302,17 @@ export default function QuestionCreation({ showToast }) {
 
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // Pending, Completed, Send Back & Question Overview Counts
+  // Pending, Completed, Draft & Question Overview Counts
+  const draftTypesCount = useMemo(
+    () => questionTypeSets.filter(q => q.status === 'Draft').length,
+    [questionTypeSets]
+  );
   const pendingRequests = useMemo(() => {
-    return questionTypeSets.filter(q => !q.questionTypes || q.questionTypes.length === 0);
+    return questionTypeSets.filter(q => (!q.questionTypes || q.questionTypes.length === 0) && q.status !== 'Draft');
   }, [questionTypeSets]);
   const pendingCount = pendingRequests.length;
-  const configuredCount = questionTypeSets.length - pendingCount;
-  const sendBackTypesCount = useMemo(
-    () => questionTypeSets.filter(q => q.status === 'Sent Back').length,
+  const configuredCount = useMemo(
+    () => questionTypeSets.filter(q => q.questionTypes && q.questionTypes.length > 0 && q.status !== 'Draft').length,
     [questionTypeSets]
   );
 
@@ -294,12 +320,8 @@ export default function QuestionCreation({ showToast }) {
     () => questions.filter(q => q.status === 'Approved' || q.status === 'Submitted').length,
     [questions]
   );
-  const sendBackQuestionsCount = useMemo(
-    () => questions.filter(q => q.status === 'Sent Back').length,
-    [questions]
-  );
   const draftQuestionsCount = useMemo(
-    () => questions.filter(q => q.status !== 'Approved' && q.status !== 'Submitted' && q.status !== 'Sent Back').length,
+    () => questions.filter(q => q.status === 'Draft').length,
     [questions]
   );
 
@@ -327,7 +349,6 @@ export default function QuestionCreation({ showToast }) {
     {
       value: 'all',
       label: 'All Statuses',
-      badge: questionTypeSets.length,
       icon: (
         <svg className="w-3.5 h-3.5 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -337,7 +358,6 @@ export default function QuestionCreation({ showToast }) {
     {
       value: 'new',
       label: 'New Requests Only',
-      badge: pendingCount,
       tone: 'amber',
       icon: (
         <svg className="w-3.5 h-3.5 text-[#D97706]" fill="currentColor" viewBox="0 0 20 20">
@@ -348,7 +368,6 @@ export default function QuestionCreation({ showToast }) {
     {
       value: 'configured',
       label: 'Completed',
-      badge: configuredCount,
       tone: 'emerald',
       icon: (
         <svg className="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
@@ -356,14 +375,22 @@ export default function QuestionCreation({ showToast }) {
         </svg>
       ),
     },
-  ], [questionTypeSets.length, pendingCount, configuredCount]);
+    {
+      value: 'draft',
+      label: 'Draft',
+      icon: (
+        <svg className="w-3.5 h-3.5 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      ),
+    },
+  ], []);
 
   // Rich CustomDropdown Status Options for Questions Tab
   const questionStatusOptions = useMemo(() => [
     {
       value: 'all',
       label: 'All Statuses',
-      badge: questions.length,
       icon: (
         <svg className="w-3.5 h-3.5 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -373,7 +400,6 @@ export default function QuestionCreation({ showToast }) {
     {
       value: 'pending',
       label: 'Pending / Draft',
-      badge: draftQuestionsCount,
       tone: 'amber',
       icon: (
         <svg className="w-3.5 h-3.5 text-[#D97706]" fill="currentColor" viewBox="0 0 20 20">
@@ -384,7 +410,6 @@ export default function QuestionCreation({ showToast }) {
     {
       value: 'completed',
       label: 'Completed',
-      badge: approvedQuestionsCount,
       tone: 'emerald',
       icon: (
         <svg className="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
@@ -392,27 +417,30 @@ export default function QuestionCreation({ showToast }) {
         </svg>
       ),
     },
-  ], [questions.length, draftQuestionsCount, approvedQuestionsCount]);
+    {
+      value: 'draft',
+      label: 'Draft Only',
+      icon: (
+        <svg className="w-3.5 h-3.5 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      ),
+    },
+  ], []);
 
   const typeProgramOptions = useMemo(() => (
     uniqueTypePrograms.map(p => ({
       value: p,
       label: p === 'All' ? 'All Classes/Programs' : p,
-      badge: p === 'All'
-        ? questionTypeSets.length
-        : questionTypeSets.filter(qt => qt.program === p).length,
     }))
-  ), [uniqueTypePrograms, questionTypeSets]);
+  ), [uniqueTypePrograms]);
 
   const typeExamOptions = useMemo(() => (
     uniqueTypeExams.map(ex => ({
       value: ex,
       label: ex === 'All' ? 'All Exams' : ex,
-      badge: ex === 'All'
-        ? questionTypeSets.length
-        : questionTypeSets.filter(qt => (qt.assessmentTag || 'Term Assessment') === ex).length,
     }))
-  ), [uniqueTypeExams, questionTypeSets]);
+  ), [uniqueTypeExams]);
 
   const typeSubjectOptions = useMemo(() => (
     uniqueTypeSubjects.map(sub => ({
@@ -464,6 +492,7 @@ export default function QuestionCreation({ showToast }) {
       const isCompleted = q.status === 'Approved' || q.status === 'Submitted';
       if (questionStatusFilter === 'pending' && isCompleted) return false;
       if (questionStatusFilter === 'completed' && !isCompleted) return false;
+      if (questionStatusFilter === 'draft' && q.status !== 'Draft') return false;
 
       const matchSearch = !term || (
         (q.code && q.code.toLowerCase().includes(term)) ||
@@ -484,9 +513,13 @@ export default function QuestionCreation({ showToast }) {
   const filteredQuestionTypeSets = useMemo(() => {
     const term = typeSearchTerm.toLowerCase().trim();
     return questionTypeSets.filter(set => {
-      const isConfigured = set.questionTypes && set.questionTypes.length > 0;
-      if (requestStatusFilter === 'new' && isConfigured) return false;
+      const isConfigured = set.questionTypes && set.questionTypes.length > 0 && set.status !== 'Draft';
+      const isDraft = set.status === 'Draft';
+      const isPending = (!set.questionTypes || set.questionTypes.length === 0) && !isDraft;
+
+      if (requestStatusFilter === 'new' && !isPending) return false;
       if (requestStatusFilter === 'configured' && !isConfigured) return false;
+      if (requestStatusFilter === 'draft' && !isDraft) return false;
 
       const matchSearch = !term || (
         (set.id && set.id.toLowerCase().includes(term)) ||
@@ -519,10 +552,14 @@ export default function QuestionCreation({ showToast }) {
   };
 
   const handleSaveQuestionTypeSet = (savedSet, status) => {
-    const exists = questionTypeSets.some(qt => qt.id === savedSet.id);
+    const itemToSave = {
+      ...savedSet,
+      dueDate: savedSet.dueDate || getFallbackDueDate(savedSet.id),
+    };
+    const exists = questionTypeSets.some(qt => qt.id === itemToSave.id);
     const updated = exists
-      ? questionTypeSets.map(qt => qt.id === savedSet.id ? savedSet : qt)
-      : [savedSet, ...questionTypeSets];
+      ? questionTypeSets.map(qt => qt.id === itemToSave.id ? itemToSave : qt)
+      : [itemToSave, ...questionTypeSets];
 
     saveQuestionTypeSetsData(updated);
     if (showToast) {
@@ -706,31 +743,37 @@ export default function QuestionCreation({ showToast }) {
             </div>
           </button>
 
-          {/* Card 4: Send Back */}
-          <div
-            title="Returned for revision"
-            className="text-left bg-white rounded-xl border border-[#E8E2D9] hover:border-rose-300/80 px-5 py-3.5 transition-all duration-150 shadow-sm hover:shadow-md flex flex-col justify-between"
+          {/* Card 4: Draft */}
+          <button
+            type="button"
+            style={{ outline: 'none' }}
+            onClick={() => setRequestStatusFilter('draft')}
+            title="Filter draft question types"
+            className={`text-left bg-white rounded-xl border px-5 py-3.5 transition-all duration-150 shadow-sm hover:shadow-md cursor-pointer flex flex-col justify-between ${
+              requestStatusFilter === 'draft'
+                ? 'border-stone-500/80 ring-1 ring-stone-500/20'
+                : 'border-[#E8E2D9] hover:border-stone-400/60'
+            }`}
           >
             <div className="flex items-center justify-between gap-2 mb-1.5">
               <span
-                className="text-2xl md:text-[26px] font-extrabold leading-none tracking-tight"
-                style={{ color: '#E11D48' }}
+                className="text-2xl md:text-[26px] font-extrabold leading-none tracking-tight text-stone-700"
               >
-                {sendBackTypesCount}
+                {draftTypesCount}
               </span>
-              <span className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+              <span className="w-7 h-7 rounded-lg bg-stone-100 text-stone-600 flex items-center justify-center shrink-0">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </span>
             </div>
             <div className="text-xs font-semibold text-gray-800 leading-tight">
-              Send Back
+              Draft
             </div>
-            <div className="text-[11px] text-rose-600/80 mt-0.5">
-              Returned for revision
+            <div className="text-[11px] text-stone-500 mt-0.5">
+              Saved as draft
             </div>
-          </div>
+          </button>
         </div>
       ) : (
         <div key="kpi-questions" className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 animate-ios-reveal">
@@ -833,31 +876,37 @@ export default function QuestionCreation({ showToast }) {
             </div>
           </button>
 
-          {/* Card 4: Send Back */}
-          <div
-            title="Returned for revision"
-            className="text-left bg-white rounded-xl border border-[#E8E2D9] hover:border-rose-300/80 px-5 py-3.5 transition-all duration-150 shadow-sm hover:shadow-md flex flex-col justify-between"
+          {/* Card 4: Draft */}
+          <button
+            type="button"
+            style={{ outline: 'none' }}
+            onClick={() => setQuestionStatusFilter('draft')}
+            title="Filter draft questions"
+            className={`text-left bg-white rounded-xl border px-5 py-3.5 transition-all duration-150 shadow-sm hover:shadow-md cursor-pointer flex flex-col justify-between ${
+              questionStatusFilter === 'draft'
+                ? 'border-stone-500/80 ring-1 ring-stone-500/20'
+                : 'border-[#E8E2D9] hover:border-stone-400/60'
+            }`}
           >
             <div className="flex items-center justify-between gap-2 mb-1.5">
               <span
-                className="text-2xl md:text-[26px] font-extrabold leading-none tracking-tight"
-                style={{ color: '#E11D48' }}
+                className="text-2xl md:text-[26px] font-extrabold leading-none tracking-tight text-stone-700"
               >
-                {sendBackQuestionsCount}
+                {draftQuestionsCount}
               </span>
-              <span className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+              <span className="w-7 h-7 rounded-lg bg-stone-100 text-stone-600 flex items-center justify-center shrink-0">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </span>
             </div>
             <div className="text-xs font-semibold text-gray-800 leading-tight">
-              Send Back
+              Draft
             </div>
-            <div className="text-[11px] text-rose-600/80 mt-0.5">
-              Returned for revision
+            <div className="text-[11px] text-stone-500 mt-0.5">
+              Saved as draft
             </div>
-          </div>
+          </button>
         </div>
       )}
 
@@ -1154,29 +1203,33 @@ export default function QuestionCreation({ showToast }) {
                       <th className="px-4 py-3 whitespace-nowrap bg-[#FBF9F6]" style={{ boxShadow: 'inset 0 -1px 0 #E8E2D9' }}>Exam</th>
                       <th className="px-4 py-3 whitespace-nowrap bg-[#FBF9F6]" style={{ boxShadow: 'inset 0 -1px 0 #E8E2D9' }}>Class / Program</th>
                       <th className="px-4 py-3 whitespace-nowrap bg-[#FBF9F6]" style={{ boxShadow: 'inset 0 -1px 0 #E8E2D9' }}>Subject</th>
+                      <th className="px-4 py-3 whitespace-nowrap bg-[#FBF9F6]" style={{ boxShadow: 'inset 0 -1px 0 #E8E2D9' }}>Due Date</th>
                       <th className="px-4 py-3 whitespace-nowrap bg-[#FBF9F6]" style={{ boxShadow: 'inset 0 -1px 0 #E8E2D9' }}>Assigned Question Types</th>
                       <th className="px-4 py-3 text-center whitespace-nowrap bg-[#FBF9F6]" style={{ boxShadow: 'inset 0 -1px 0 #E8E2D9' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filteredQuestionTypeSets.map((set) => {
-                      const isNewRequest = !set.questionTypes || set.questionTypes.length === 0;
+                      const isDraft = set.status === 'Draft';
+                      const isNewRequest = (!set.questionTypes || set.questionTypes.length === 0) && !isDraft;
                       return (
                         <tr
                           key={set.id}
                           onClick={() => {
-                            if (isNewRequest) {
+                            if (isNewRequest || isDraft) {
                               setEditingType(set);
                               setIsTypeModalOpen(true);
                             } else {
                               setViewingType(set);
                             }
                           }}
-                          title={isNewRequest ? 'Click to add question types' : 'Click to view question types details'}
-                          style={isNewRequest ? { boxShadow: 'inset 3px 0 0 #F59E0B' } : undefined}
+                          title={isNewRequest ? 'Click to add question types' : isDraft ? 'Click to resume draft' : 'Click to view question types details'}
+                          style={isNewRequest ? { boxShadow: 'inset 3px 0 0 #F59E0B' } : isDraft ? { boxShadow: 'inset 3px 0 0 #78716C' } : undefined}
                           className={`transition-colors cursor-pointer ${
                             isNewRequest
                               ? 'bg-[#FFFDF7] hover:bg-[#FEF9EE]'
+                              : isDraft
+                              ? 'bg-stone-50/50 hover:bg-stone-100/60'
                               : 'hover:bg-[#fdf5f6]'
                           }`}
                         >
@@ -1211,10 +1264,26 @@ export default function QuestionCreation({ showToast }) {
                             </span>
                           </td>
 
-                          {/* 5. Assigned Question Types (Single-Line Badges + Overflow) */}
+                          {/* 5. Due Date */}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FAF9F7] border border-stone-200/90 text-stone-700 font-medium text-[11.5px] shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                              <svg className="w-3.5 h-3.5 text-stone-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span>{set.dueDate || getFallbackDueDate(set.id)}</span>
+                            </div>
+                          </td>
+
+                          {/* 6. Assigned Question Types (Single-Line Badges + Overflow) */}
                           <td className="px-4 py-3 whitespace-nowrap">
                             {set.questionTypes && set.questionTypes.length > 0 ? (
                               <div className="flex items-center gap-1.5 flex-nowrap">
+                                {isDraft && (
+                                  <span className="bg-stone-100 text-stone-700 border border-stone-300 font-bold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1 shrink-0 whitespace-nowrap">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
+                                    Draft
+                                  </span>
+                                )}
                                 {set.questionTypes.slice(0, 2).map((t, idx) => {
                                   const typeName = typeof t === 'string' ? t : t.name;
                                   const badgeClass = getQuestionTypeBadgeStyle(typeName);
@@ -1245,6 +1314,19 @@ export default function QuestionCreation({ showToast }) {
                                   </button>
                                 )}
                               </div>
+                            ) : isDraft ? (
+                              <div className="flex items-center gap-2">
+                                <span className="bg-stone-100 text-stone-700 border border-stone-300 font-bold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
+                                  SAVED AS DRAFT
+                                </span>
+                                <span
+                                  title="Draft saved, awaiting completion"
+                                  className="text-gray-400 italic text-[11.5px] font-normal truncate max-w-[200px]"
+                                >
+                                  — In progress
+                                </span>
+                              </div>
                             ) : (
                               <div className="flex items-center gap-2">
                                 <span className="bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] font-bold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap">
@@ -1263,14 +1345,46 @@ export default function QuestionCreation({ showToast }) {
 
                           {/* 6. Actions */}
                           <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                            {set.questionTypes && set.questionTypes.length > 0 ? (
-                              <div className="flex items-center justify-center gap-1.5">
+                            {isDraft ? (
+                              <div className="flex items-center justify-center gap-1.5 w-[140px] mx-auto">
+                                <button
+                                  onClick={() => {
+                                    setEditingType(set);
+                                    setIsTypeModalOpen(true);
+                                  }}
+                                  className="flex-1 inline-flex items-center justify-center h-7 px-2 rounded-lg text-stone-700 border border-stone-300 bg-stone-100 hover:bg-stone-200 hover:border-stone-400 hover:shadow-xs transition-all duration-150 text-[11px] font-semibold cursor-pointer"
+                                  title="Resume Draft"
+                                >
+                                  Draft
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingType(set);
+                                    setIsTypeModalOpen(true);
+                                  }}
+                                  className="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-lg text-amber-700 border border-amber-200 bg-amber-50/40 hover:bg-amber-100 hover:border-amber-300 hover:text-amber-800 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
+                                  title="Edit Draft"
+                                  aria-label="Edit Draft"
+                                >
+                                  <Icon name="edit" className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => setDeleteTarget({ type: 'type', item: set })}
+                                  className="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-lg text-red-600 border border-red-200 bg-red-50/40 hover:bg-red-100 hover:border-red-300 hover:text-red-700 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
+                                  title="Delete Draft"
+                                  aria-label="Delete Draft"
+                                >
+                                  <Icon name="trash" className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : set.questionTypes && set.questionTypes.length > 0 ? (
+                              <div className="flex items-center justify-center gap-1.5 w-[140px] mx-auto">
                                 <button
                                   onClick={() => setViewingType(set)}
-                                  className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-[#72102a] border border-[#72102a]/30 bg-[#72102a]/5 hover:bg-[#72102a]/15 hover:border-[#72102a]/50 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 text-[11px] font-semibold cursor-pointer"
+                                  className="flex-1 inline-flex items-center justify-center gap-1 h-7 px-2 rounded-lg text-[#72102a] border border-[#72102a]/30 bg-[#72102a]/5 hover:bg-[#72102a]/15 hover:border-[#72102a]/50 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 text-[11px] font-semibold cursor-pointer"
                                   title="View Details"
                                 >
-                                  <Icon name="eye" className="w-3.5 h-3.5" />
+                                  <Icon name="eye" className="w-3.5 h-3.5 shrink-0" />
                                   View
                                 </button>
                                 <button
@@ -1278,7 +1392,7 @@ export default function QuestionCreation({ showToast }) {
                                     setEditingType(set);
                                     setIsTypeModalOpen(true);
                                   }}
-                                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-amber-700 border border-amber-200 bg-amber-50/40 hover:bg-amber-100 hover:border-amber-300 hover:text-amber-800 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
+                                  className="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-lg text-amber-700 border border-amber-200 bg-amber-50/40 hover:bg-amber-100 hover:border-amber-300 hover:text-amber-800 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
                                   title="Edit Question Types"
                                   aria-label="Edit Question Types"
                                 >
@@ -1286,7 +1400,7 @@ export default function QuestionCreation({ showToast }) {
                                 </button>
                                 <button
                                   onClick={() => setDeleteTarget({ type: 'type', item: set })}
-                                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 border border-red-200 bg-red-50/40 hover:bg-red-100 hover:border-red-300 hover:text-red-700 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
+                                  className="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-lg text-red-600 border border-red-200 bg-red-50/40 hover:bg-red-100 hover:border-red-300 hover:text-red-700 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
                                   title="Delete Question Types"
                                   aria-label="Delete Question Types"
                                 >

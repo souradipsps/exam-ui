@@ -154,11 +154,11 @@ export default function CreateQuestionModal({
   };
 
   return (
-    <div className="fixed top-[60px] left-0 md:left-[240px] right-0 bottom-0 z-40 bg-[#FAF8F5]/70 backdrop-blur-md p-3 sm:p-5 lg:p-6 flex flex-col overflow-hidden">
-      <div className="relative w-full h-full bg-white/85 backdrop-blur-xl rounded-3xl shadow-[0_14px_44px_-10px_rgba(24,24,27,0.12),0_0_0_1px_rgba(232,226,217,0.9)] border border-white/90 overflow-hidden flex flex-col animate-ios-reveal">
+    <div className="fixed top-[60px] left-0 md:left-[240px] right-0 bottom-0 z-40 bg-black/60 backdrop-blur-sm p-3 sm:p-5 lg:p-6 flex flex-col overflow-hidden">
+      <div className="relative w-full h-full bg-[#FAF8F5] rounded-3xl shadow-[0_24px_60px_-12px_rgba(0,0,0,0.4)] border border-stone-200/80 overflow-hidden flex flex-col animate-ios-reveal">
         
         {/* MODAL HEADER */}
-        <div className="px-5 sm:px-7 py-4 bg-white/80 backdrop-blur-lg border-b border-[#E8E2D9] flex items-center justify-between gap-3 shrink-0">
+        <div className="px-5 sm:px-7 py-4 bg-white border-b border-[#E8E2D9] flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3.5 min-w-0">
             <span className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#8B1F3A] to-[#5C0C21] text-white flex items-center justify-center font-bold text-xs shadow-sm shrink-0">
               Q+

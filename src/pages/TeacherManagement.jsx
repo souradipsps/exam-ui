@@ -69,11 +69,11 @@ const ProgramSelect = ({ options, value, onChange }) => {
         {value || 'Select class / program'}
         <input required name="program" value={value} onChange={() => {}} tabIndex={-1} aria-hidden="true" className="absolute inset-0 w-full h-full opacity-0 pointer-events-none" />
       </summary>
-      <div className="absolute z-20 mt-0.5 w-full max-h-48 overflow-y-auto bg-white border border-stone-500">
+      <div className="group/list absolute z-20 mt-0.5 w-full max-h-48 overflow-y-auto bg-white border border-stone-500">
         <button
           type="button"
           onClick={() => { onChange({ target: { value: '' } }); detailsRef.current.open = false; }}
-          className={`block w-full text-left px-3 py-0.5 text-sm text-[#1A1A1A] hover:bg-[#1A6ADB] hover:text-white cursor-pointer ${!value ? 'bg-[#1A6ADB] text-white' : ''}`}
+          className={`block w-full text-left px-3 py-0.5 text-sm text-[#1A1A1A] hover:!bg-[#1A6ADB] hover:!text-white cursor-pointer ${!value ? 'bg-[#1A6ADB] text-white group-hover/list:bg-white group-hover/list:text-[#1A1A1A]' : ''}`}
         >
           Select class / program
         </button>
@@ -82,7 +82,7 @@ const ProgramSelect = ({ options, value, onChange }) => {
             key={opt}
             type="button"
             onClick={() => { onChange({ target: { value: opt } }); detailsRef.current.open = false; }}
-            className={`block w-full text-left px-3 py-0.5 text-sm text-[#1A1A1A] hover:bg-[#1A6ADB] hover:text-white cursor-pointer ${value === opt ? 'bg-[#1A6ADB] text-white' : ''}`}
+            className={`block w-full text-left px-3 py-0.5 text-sm text-[#1A1A1A] hover:!bg-[#1A6ADB] hover:!text-white cursor-pointer ${value === opt ? 'bg-[#1A6ADB] text-white group-hover/list:bg-white group-hover/list:text-[#1A1A1A]' : ''}`}
           >
             {opt}
           </button>
@@ -93,8 +93,12 @@ const ProgramSelect = ({ options, value, onChange }) => {
 };
 
 // "Subject & Chapter Mapping" panel: one column per selected subject, chapter names shown on "See Chapters"
-const ChapterMapping = ({ subjects, gold }) => {
+const ChapterMapping = ({ subjects, gold, selectedChapters, onRemoveChapter }) => {
   const [showChapters, setShowChapters] = useState(false);
+  // Chapters of a subject that are still selected (the X button removes one)
+  const chaptersOf = (sub) => getSubjectChapters(sub)
+    .map((name, idx) => ({ name, idx, key: `${getSubjectBaseName(sub)} - Chapter ${idx + 1} : ${name}` }))
+    .filter(c => selectedChapters.includes(c.key));
   const t = gold
     ? { panel: '#FDF8E8', panelBorder: 'rgba(201,168,76,0.5)', border: '#C9A84C', pillBg: 'rgba(201,168,76,0.25)', pillText: '#A68A3D' }
     : { panel: '#F5E6EA', panelBorder: '#E6C4CD', border: '#72102A', pillBg: '#E6C4CD', pillText: '#72102A' };
@@ -106,6 +110,16 @@ const ChapterMapping = ({ subjects, gold }) => {
           <h4 className="text-base font-bold text-[#1A1A1A] leading-tight">Subject & Chapter Mapping</h4>
           <p className="text-xs text-stone-600">Review the chapters mapped for each selected subject.</p>
         </div>
+          <button
+            type="button"
+            onClick={() => setShowChapters(prev => !prev)}
+            className="inline-flex items-center justify-center gap-2 px-3 py-1 rounded-xl bg-[#72102A] hover:bg-[#8B1F3A] text-white shadow-md shadow-[#72102A]/20 border border-[#8B1F3A] transition-all text-xs font-bold whitespace-nowrap"
+          >
+            {showChapters ? 'Hide Chapters' : 'See Chapters'}
+            <svg className={`w-3 h-3 transition-transform ${showChapters ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+              <path d="M5 7l5 6 5-6H5z" />
+            </svg>
+          </button>
       </div>
       <div className="flex flex-col md:flex-row md:items-center gap-4 p-4">
         <div className="flex-1 overflow-x-auto">
@@ -114,8 +128,8 @@ const ChapterMapping = ({ subjects, gold }) => {
               {subjects.map((sub, i) => (
                 <div key={sub} className={`px-4 py-3 text-left bg-[#FAF8F5] ${i ? 'border-l border-stone-200' : ''}`}>
                   <p className="text-[11px] font-semibold text-stone-600 uppercase tracking-wide">{getSubjectBaseName(sub)}</p>
-                  <span className="inline-block mt-1.5 text-xs font-bold px-3 py-0.5 rounded-full" style={{ backgroundColor: t.pillBg, color: t.pillText }}>
-                    {getSubjectChapters(sub).length} Chapters
+                  <span className="inline-block mt-1.5 text-xs font-bold px-3 py-0.5 rounded-full" style={{ backgroundColor: '#E6C4CD', color: '#72102A' }}>
+                    {chaptersOf(sub).length} Chapters
                   </span>
                 </div>
               ))}
@@ -124,8 +138,8 @@ const ChapterMapping = ({ subjects, gold }) => {
               <div className="grid border-t border-stone-200" style={cols}>
                 {subjects.map((sub, i) => (
                   <div key={sub} className={`px-4 py-3 space-y-1.5 text-xs text-stone-600 ${i ? 'border-l border-stone-200' : ''}`}>
-                    {getSubjectChapters(sub).map((name, idx) => (
-                      <p key={name}>Chapter {idx + 1} : {name}</p>
+                    {chaptersOf(sub).map(c => (
+                      <p key={c.key}>Chapter {c.idx + 1} : {c.name}</p>
                     ))}
                   </div>
                 ))}
@@ -133,13 +147,6 @@ const ChapterMapping = ({ subjects, gold }) => {
             )}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowChapters(prev => !prev)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-[#72102A] bg-white text-[#72102A] text-sm font-semibold hover:bg-[#F5E6EA] whitespace-nowrap self-start md:ml-auto"
-        >
-          {showChapters ? 'Hide Chapters' : 'See Chapters'}
-        </button>
       </div>
     </div>
   );
@@ -185,7 +192,7 @@ const INSTRUCTION_KEYS = ['intro'];
 // Builds the auto-generated sentence (empty array = nothing selected yet)
 const buildInstructionItems = ({ kind, exam, session, program, subject, chapters, dueDate }) => {
   const [y, m, d] = (dueDate || '').split('-');
-  const sentence = `Please send ${kind}${exam ? ` for the ${exam}` : ''}${session ? ` for the Session: ${session}` : ''}${program ? ` for the Class/Program: ${program}` : ''}${subject ? ` for the Subject/Course: ${subject}` : ''}${chapters.length ? ` for the Chapters: ${chapters.join(', ')}` : ''}${dueDate ? ` by the Due Date: ${d}-${m}-${y}` : ''}`;
+  const sentence = `Please send ${kind}${exam ? ` for the ${exam}` : ''}${session ? ` for the Session: ${session}` : ''}${program ? ` for the Class/Program: ${program}` : ''}${subject ? ' for your subjects' : ''}${dueDate ? ` by the Due Date: ${d}-${m}-${y}` : ''}`;
   return {
     intro: (exam || session || program || subject || chapters.length || dueDate) ? [sentence] : [],
   };
@@ -220,6 +227,13 @@ const syncInstructions = ({ text, removed }, fields) => {
     }
   });
   return { text: lines.join('\n'), removed: nextRemoved, def: INSTRUCTION_KEYS.flatMap(k => items[k]).join('\n') };
+};
+
+// Current academic session (April to March), e.g. "2026-27"
+const getCurrentSession = () => {
+  const now = new Date();
+  const start = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  return `${start}-${String(start + 1).slice(-2)}`;
 };
 
 // Display helper: "Class 9" -> "IX"
@@ -263,7 +277,8 @@ export default function TeacherManagement() {
   const selectedSubject = selectedSubjects.join(', ');
   const setSelectedSubject = (v) => setSelectedSubjects(Array.isArray(v) ? v : (v ? v.split(', ') : []));
   const [selectedExam, setSelectedExam] = useState("");
-  const [selectedSession, setSelectedSession] = useState("");
+  const [lastCreatedExam, setLastCreatedExam] = useState("");
+  const [selectedSession, setSelectedSession] = useState(getCurrentSession());
 
   // Form State for Question Types Assignment (Step 2A)
   const [selectedQuestionTypes, setSelectedQuestionTypes] = useState(['Multiple Choice (MCQ)', 'Essay']);
@@ -376,8 +391,8 @@ export default function TeacherManagement() {
   // Start every new assignment form with the details empty
   useEffect(() => {
     if (isAssignmentModalOpen && !editingAssignment) {
-      setSelectedExam('');
-      setSelectedSession('');
+      setSelectedExam(lastCreatedExam);
+      setSelectedSession(getCurrentSession());
       setSelectedProgram('');
       setSelectedSubject('');
       setSelectedChapters([]);
@@ -391,7 +406,7 @@ export default function TeacherManagement() {
   // Grow the instructions box with its text (the Due Date box stretches to match it)
   useEffect(() => {
     const el = instructionsRef.current;
-    if (el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
+    if (el) { el.style.minHeight = '0px'; el.style.height = 'auto'; el.style.minHeight = (el.scrollHeight + 2) + 'px'; }
   }, [instr.text, assignmentStep]);
 
   // True when the user changed the text away from the last auto-generated default
@@ -679,6 +694,7 @@ export default function TeacherManagement() {
 
       setActivityLogs(prev => [newLog, ...prev]);
       setIsAssignmentModalOpen(false);
+      setLastCreatedExam(selectedExam);
       showToast(`Created Question Type assignment for ${subject}!`);
     }
   };
@@ -756,6 +772,7 @@ export default function TeacherManagement() {
 
       setActivityLogs(prev => [newLog, ...prev]);
       setIsAssignmentModalOpen(false);
+      setLastCreatedExam(selectedExam);
       showToast(`Assigned ${selectedQuestionIds.length} questions for ${subject} to ${teacher.name}!`);
     }
   };
@@ -1008,19 +1025,14 @@ export default function TeacherManagement() {
                       <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
                         2. Select Session
                       </label>
-                      <select
+                      <input
+                        type="text"
                         name="session"
                         required
+                        readOnly
                         value={selectedSession}
-                        onChange={(e) => setSelectedSession(e.target.value)}
-                        className={`w-full appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[length:1rem] bg-white border border-stone-300 rounded-md px-3 py-2 text-sm ${selectedSession ? 'text-[#1A1A1A]' : 'text-stone-400'} focus:outline-none focus:border-[#72102A] cursor-pointer`}
-                        style={{ backgroundImage: SELECT_ARROW }}
-                      >
-                        <option value="">Select session</option>
-                        {['2025-26', '2026-27', '2027-28'].map(ses => (
-                          <option key={ses} className="text-[#1A1A1A]" value={ses}>{ses}</option>
-                        ))}
-                      </select>
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none cursor-default"
+                      />
                     </div>
 
                     {/* 3. Select Class / Program */}
@@ -1046,7 +1058,7 @@ export default function TeacherManagement() {
                       </label>
                       <input required value={selectedChapters.length ? 'filled' : ''} onChange={() => {}} tabIndex={-1} aria-hidden="true" className="absolute left-0 bottom-0 w-full h-1 opacity-0 pointer-events-none" />
                       {!selectedSubject && <p className="px-3 py-2 text-sm text-stone-400 border border-stone-300 rounded-md bg-white">Select subject / course first</p>}
-                      {selectedSubject && <ChapterMapping subjects={selectedSubjects} gold={false} />}
+                      {selectedSubject && <ChapterMapping subjects={selectedSubjects} gold={false} selectedChapters={selectedChapters} onRemoveChapter={(key) => setSelectedChapters(prev => prev.filter(c => c !== key))} />}
                     </div>
                   </div>
 
@@ -1146,6 +1158,7 @@ export default function TeacherManagement() {
                         name="dueDate"
                         required
                         max="9999-12-31"
+                        onClick={(e) => { try { e.currentTarget.showPicker(); } catch (err) { /* picker not supported */ } }}
                         value={selectedDueDate}
                         onChange={(e) => { setSelectedDueDate(e.target.value); e.target.classList.toggle('text-stone-400', !e.target.value); e.target.classList.toggle('text-[#1A1A1A]', !!e.target.value); }}
                         className="w-full flex-1 bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-stone-400 focus:outline-none focus:border-[#72102A] cursor-pointer"
@@ -1153,7 +1166,7 @@ export default function TeacherManagement() {
                     </div>
 
                     {/* Instructions */}
-                    <div className="md:col-span-1">
+                    <div className="md:col-span-1 flex flex-col">
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide">Instructions & Guidelines</label>
                         {isInstructionsEdited && (
@@ -1168,7 +1181,7 @@ export default function TeacherManagement() {
                         value={instr.text}
                         onChange={(e) => setInstr(prev => ({ ...prev, text: e.target.value }))}
                         placeholder="e.g. Prepare 10 MCQs and 5 Essay questions for the upcoming midterm exam..."
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] resize-none overflow-hidden"
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] flex-1 resize-none overflow-hidden min-h-[38px]"
                       />
                     </div>
                   </div>
@@ -1227,19 +1240,14 @@ export default function TeacherManagement() {
                       <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
                         2. Select Session
                       </label>
-                      <select
+                      <input
+                        type="text"
                         name="session"
                         required
+                        readOnly
                         value={selectedSession}
-                        onChange={(e) => setSelectedSession(e.target.value)}
-                        className={`w-full appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[length:1rem] bg-white border border-stone-300 rounded-md px-3 py-2 text-sm ${selectedSession ? 'text-[#1A1A1A]' : 'text-stone-400'} focus:outline-none focus:border-[#72102A] cursor-pointer`}
-                        style={{ backgroundImage: SELECT_ARROW }}
-                      >
-                        <option value="">Select session</option>
-                        {['2025-26', '2026-27', '2027-28'].map(ses => (
-                          <option key={ses} className="text-[#1A1A1A]" value={ses}>{ses}</option>
-                        ))}
-                      </select>
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none cursor-default"
+                      />
                     </div>
 
                     {/* 3. Select Class / Program */}
@@ -1265,7 +1273,7 @@ export default function TeacherManagement() {
                       </label>
                       <input required value={selectedChapters.length ? 'filled' : ''} onChange={() => {}} tabIndex={-1} aria-hidden="true" className="absolute left-0 bottom-0 w-full h-1 opacity-0 pointer-events-none" />
                       {!selectedSubject && <p className="px-3 py-2 text-sm text-stone-400 border border-stone-300 rounded-md bg-white">Select subject / course first</p>}
-                      {selectedSubject && <ChapterMapping subjects={selectedSubjects} gold={true} />}
+                      {selectedSubject && <ChapterMapping subjects={selectedSubjects} gold={true} selectedChapters={selectedChapters} onRemoveChapter={(key) => setSelectedChapters(prev => prev.filter(c => c !== key))} />}
                     </div>
                   </div>
 
@@ -1328,6 +1336,7 @@ export default function TeacherManagement() {
                         name="dueDate"
                         required
                         max="9999-12-31"
+                        onClick={(e) => { try { e.currentTarget.showPicker(); } catch (err) { /* picker not supported */ } }}
                         value={selectedDueDate}
                         onChange={(e) => { setSelectedDueDate(e.target.value); e.target.classList.toggle('text-stone-400', !e.target.value); e.target.classList.toggle('text-[#1A1A1A]', !!e.target.value); }}
                         className="w-full flex-1 bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-stone-400 focus:outline-none focus:border-[#72102A] cursor-pointer"
@@ -1335,7 +1344,7 @@ export default function TeacherManagement() {
                     </div>
 
                     {/* Instructions */}
-                    <div className="md:col-span-1">
+                    <div className="md:col-span-1 flex flex-col">
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide">Instructions & Guidelines</label>
                         {isInstructionsEdited && (
@@ -1350,7 +1359,7 @@ export default function TeacherManagement() {
                         value={instr.text}
                         onChange={(e) => setInstr(prev => ({ ...prev, text: e.target.value }))}
                         placeholder="e.g. Prepare 10 MCQs and 5 Essay questions for the upcoming midterm exam..."
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] resize-none overflow-hidden"
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] flex-1 resize-none overflow-hidden min-h-[38px]"
                       />
                     </div>
                   </div>
@@ -1531,25 +1540,11 @@ export default function TeacherManagement() {
       {activeTab === 'teachers' && !(isAssignmentModalOpen && (assignmentStep === 'questionTypeForm' || assignmentStep === 'questionForm')) && (
         <div className="space-y-6">
           {/* TEACHER LIST FILTER CONTROLS BAR */}
-          <div className="bg-white border border-stone-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="p-2.5 rounded-xl bg-[#F5E6EA] text-[#72102A] border border-[#E6C4CD]">
-                <Icon name="filter" className="w-5 h-5" />
-              </span>
-              <div>
-                <h3 className="text-sm font-bold text-[#1A1A1A] flex flex-col items-start gap-1">
-                  Filter Faculty Directory
-                  {(teacherDeptFilter !== 'All' || teacherDesignationFilter !== 'All' || teacherSubjectFilter !== 'All' || teacherClassFilter !== 'All' || teacherSectionFilter !== 'All') && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#72102A] text-white">
-                      Filtered ({filteredTeachers.length} shown)
-                    </span>
-                  )}
-                </h3>
-              </div>
-            </div>
+          <div className="bg-white border border-[#E8E2D9] rounded-[14px] p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center gap-3">
+            <span className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-[0.08em] mr-1">Filters</span>
 
           {/* SEARCH INPUT */}
-          <div className="relative w-full md:w-56 shrink-0 md:self-end">
+          <div className="relative w-full md:w-auto md:flex-1 md:min-w-[14rem]">
             <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
             <input
               type="text"
@@ -1557,12 +1552,12 @@ export default function TeacherManagement() {
                 activeTab === 'assignments'
                   ? "Search assignments by course, teacher, or type..."
                   : activeTab === 'teachers'
-                  ? "Educators/Department"
+                  ? "Educators or Departments"
                   : "Search activity logs..."
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl pl-10 pr-10 py-1.5 text-xs text-[#1A1A1A] placeholder-stone-400 focus:outline-none focus:border-[#72102A] focus:ring-1 focus:ring-[#72102A] transition-all"
+              className="w-full bg-[#FAFAF9] border-[1.5px] border-[#E8E2D9] rounded-[10px] pl-10 pr-10 py-2.5 text-[13px] text-[#1A1A1A] placeholder-stone-400 focus:outline-none focus:border-[#72102A] focus:bg-white focus:ring-[3px] focus:ring-[#72102A]/10 transition-all"
             />
             {searchTerm && (
               <button
@@ -1574,92 +1569,96 @@ export default function TeacherManagement() {
             )}
           </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 flex-1 max-w-4xl">
+            <div className="flex flex-wrap items-center gap-[6px]">
               {/* Department Filter */}
-              <div>
-                <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">Department</label>
+              <div className="flex items-center gap-[6px]">
                 <select
+                  title="Department"
                   value={teacherDeptFilter}
                   onChange={(e) => setTeacherDeptFilter(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                  className={`min-w-[90px] px-3 py-[5px] text-sm border-[1.5px] rounded-full focus:outline-none cursor-pointer transition-all ${teacherDeptFilter !== 'All' ? 'bg-[rgba(114,16,42,0.07)] border-[rgba(114,16,42,0.3)] text-[#72102A] font-bold' : 'bg-[#F9F9F8] border-[#E8E2D9] text-[#4B5563] font-medium'}`}
                 >
                   {uniqueDepartments.map(dept => (
-                    <option key={dept} value={dept}>{dept === 'All' ? 'All Departments' : dept}</option>
+                    <option key={dept} className="bg-white text-[#1A1A1A] font-normal" value={dept}>{dept === 'All' ? 'All Departments' : dept}</option>
                   ))}
                 </select>
               </div>
 
               {/* Designation Filter */}
-              <div>
-                <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">Designation</label>
+              <div className="flex items-center gap-[6px]">
+                <span className="text-[#D1D5DB] text-[11px] font-bold select-none px-px">›</span>
                 <select
+                  title="Designation"
                   value={teacherDesignationFilter}
                   onChange={(e) => setTeacherDesignationFilter(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                  className={`min-w-[90px] px-3 py-[5px] text-sm border-[1.5px] rounded-full focus:outline-none cursor-pointer transition-all ${teacherDesignationFilter !== 'All' ? 'bg-[rgba(114,16,42,0.07)] border-[rgba(114,16,42,0.3)] text-[#72102A] font-bold' : 'bg-[#F9F9F8] border-[#E8E2D9] text-[#4B5563] font-medium'}`}
                 >
                   {uniqueDesignations.map(desig => (
-                    <option key={desig} value={desig}>{desig === 'All' ? 'All Designations' : desig}</option>
+                    <option key={desig} className="bg-white text-[#1A1A1A] font-normal" value={desig}>{desig === 'All' ? 'All Designations' : desig}</option>
                   ))}
                 </select>
               </div>
 
               {/* Subject Filter */}
-              <div>
-                <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">Subject Taught</label>
+              <div className="flex items-center gap-[6px]">
+                <span className="text-[#D1D5DB] text-[11px] font-bold select-none px-px">›</span>
                 <select
+                  title="Subject/Course"
                   value={teacherSubjectFilter}
                   onChange={(e) => setTeacherSubjectFilter(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                  className={`min-w-[90px] px-3 py-[5px] text-sm border-[1.5px] rounded-full focus:outline-none cursor-pointer transition-all ${teacherSubjectFilter !== 'All' ? 'bg-[rgba(114,16,42,0.07)] border-[rgba(114,16,42,0.3)] text-[#72102A] font-bold' : 'bg-[#F9F9F8] border-[#E8E2D9] text-[#4B5563] font-medium'}`}
                 >
                   {uniqueTeacherSubjects.map(sub => (
-                    <option key={sub} value={sub}>{sub === 'All' ? 'All Subjects' : sub}</option>
+                    <option key={sub} className="bg-white text-[#1A1A1A] font-normal" value={sub}>{sub === 'All' ? 'Subject/Course' : sub}</option>
                   ))}
                 </select>
               </div>
 
               {/* Class Filter */}
-              <div>
-                <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">Class</label>
+              <div className="flex items-center gap-[6px]">
+                <span className="text-[#D1D5DB] text-[11px] font-bold select-none px-px">›</span>
                 <select
+                  title="Class/Program"
                   value={teacherClassFilter}
                   onChange={(e) => setTeacherClassFilter(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                  className={`min-w-[90px] px-3 py-[5px] text-sm border-[1.5px] rounded-full focus:outline-none cursor-pointer transition-all ${teacherClassFilter !== 'All' ? 'bg-[rgba(114,16,42,0.07)] border-[rgba(114,16,42,0.3)] text-[#72102A] font-bold' : 'bg-[#F9F9F8] border-[#E8E2D9] text-[#4B5563] font-medium'}`}
                 >
                   {uniqueTeacherClasses.map(cls => (
-                    <option key={cls} value={cls}>{cls === 'All' ? 'All Classes' : toRomanClass(cls)}</option>
+                    <option key={cls} className="bg-white text-[#1A1A1A] font-normal" value={cls}>{cls === 'All' ? 'Class/Program' : toRomanClass(cls)}</option>
                   ))}
                 </select>
               </div>
 
               {/* Section Filter */}
-              <div>
-                <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">Section</label>
+              <div className="flex items-center gap-[6px]">
+                <span className="text-[#D1D5DB] text-[11px] font-bold select-none px-px">›</span>
                 <select
+                  title="Section"
                   value={teacherSectionFilter}
                   onChange={(e) => setTeacherSectionFilter(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                  className={`min-w-[90px] px-3 py-[5px] text-sm border-[1.5px] rounded-full focus:outline-none cursor-pointer transition-all ${teacherSectionFilter !== 'All' ? 'bg-[rgba(114,16,42,0.07)] border-[rgba(114,16,42,0.3)] text-[#72102A] font-bold' : 'bg-[#F9F9F8] border-[#E8E2D9] text-[#4B5563] font-medium'}`}
                 >
                   {uniqueTeacherSections.map(sec => (
-                    <option key={sec} value={sec}>{sec === 'All' ? 'All Sections' : sec}</option>
+                    <option key={sec} className="bg-white text-[#1A1A1A] font-normal" value={sec}>{sec === 'All' ? 'All Sections' : sec}</option>
                   ))}
                 </select>
               </div>
+              <button
+                onClick={() => {
+                  setTeacherDeptFilter('All');
+                  setTeacherDesignationFilter('All');
+                  setTeacherSubjectFilter('All');
+                  setTeacherClassFilter('All');
+                  setTeacherSectionFilter('All');
+                }}
+                className={`inline-flex items-center gap-[5px] px-3 py-[5px] ml-1 rounded-full bg-[rgba(114,16,42,0.06)] hover:bg-[rgba(114,16,42,0.12)] border-[1.5px] border-[rgba(114,16,42,0.2)] text-[#72102A] text-xs font-semibold transition-all shrink-0 focus:outline-none ${
+                  (teacherDeptFilter !== 'All' || teacherDesignationFilter !== 'All' || teacherSubjectFilter !== 'All' || teacherClassFilter !== 'All' || teacherSectionFilter !== 'All') ? '' : 'invisible'
+                }`}
+              >
+                <Icon name="close" className="w-3 h-3" />
+              Clear ({[teacherDeptFilter, teacherDesignationFilter, teacherSubjectFilter, teacherClassFilter, teacherSectionFilter].filter(f => f !== 'All').length})
+              </button>
             </div>
-
-            <button
-              onClick={() => {
-                setTeacherDeptFilter('All');
-                setTeacherDesignationFilter('All');
-                setTeacherSubjectFilter('All');
-                setTeacherClassFilter('All');
-                setTeacherSectionFilter('All');
-              }}
-              className={`px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-all shrink-0 self-end md:self-center focus:outline-none focus:ring-1 focus:ring-[#72102A] ${
-                (teacherDeptFilter !== 'All' || teacherDesignationFilter !== 'All' || teacherSubjectFilter !== 'All' || teacherClassFilter !== 'All' || teacherSectionFilter !== 'All') ? '' : 'invisible'
-              }`}
-            >
-              Clear Filters
-            </button>
           </div>
 
           {filteredTeachers.length === 0 ? (

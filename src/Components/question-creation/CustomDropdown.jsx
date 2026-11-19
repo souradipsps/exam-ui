@@ -68,7 +68,7 @@ export default function CustomDropdown({
     const openUpward = spaceBelow < Math.min(estimatedMenuHeight, 220) && spaceAbove > spaceBelow;
 
     const minWidth = Math.max(rect.width, 190);
-    const maxWidth = Math.min(310, viewportW - padding * 2);
+    const maxWidth = Math.max(minWidth, Math.min(540, viewportW - padding * 2));
 
     const style = {
       position: 'fixed',

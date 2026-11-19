@@ -72,10 +72,15 @@ export default function QuestionCreation({ showToast }) {
         const hydrated = parsed.map(item => {
           const ref = initById.get(item.id);
           if (!ref) return item;
+          const mergedChapters =
+            ref.chapters && ref.chapters.length > (item.chapters?.length || 0)
+              ? ref.chapters
+              : (item.chapters && item.chapters.length > 0 ? item.chapters : ref.chapters || []);
           return {
             ...item,
+            session: item.session || ref.session || '2026-27',
             assessmentTag: item.assessmentTag || ref.assessmentTag,
-            chapters: item.chapters && item.chapters.length > 0 ? item.chapters : ref.chapters,
+            chapters: mergedChapters,
             chapterQuestionTypes: item.chapterQuestionTypes || ref.chapterQuestionTypes,
           };
         });

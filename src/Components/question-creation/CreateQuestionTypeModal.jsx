@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   ACADEMIC_PROGRAMS,
   PROGRAM_SUBJECTS,
   EXAMS_LIST,
+  SESSIONS_LIST,
   DEFAULT_CHAPTERS_BY_SUBJECT,
   MASTER_QUESTION_TYPES
 } from '../../data/questionCreationData.js';
@@ -64,10 +65,18 @@ const getFallbackChapters = (subject) => {
 };
 
 const buildInitialChapters = (editingItem, subject) => {
-  if (editingItem && Array.isArray(editingItem.chapters) && editingItem.chapters.length > 0) {
+  const fallback = getFallbackChapters(subject);
+  if (editingItem && Array.isArray(editingItem.chapters) && editingItem.chapters.length >= fallback.length) {
     return [...editingItem.chapters];
   }
-  return getFallbackChapters(subject);
+  if (editingItem && Array.isArray(editingItem.chapters) && editingItem.chapters.length > 0) {
+    const combined = [...editingItem.chapters];
+    fallback.forEach((ch) => {
+      if (!combined.includes(ch)) combined.push(ch);
+    });
+    return combined;
+  }
+  return fallback;
 };
 
 const buildInitialChapterMap = (editingItem, chaptersList) => {
@@ -93,6 +102,9 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
     (PROGRAM_SUBJECTS[ACADEMIC_PROGRAMS[0]] ? PROGRAM_SUBJECTS[ACADEMIC_PROGRAMS[0]][0] : '');
   const initialChapters = buildInitialChapters(editingItem, initialSubject);
 
+  const [selectedSession, setSelectedSession] = useState(
+    editingItem?.session || SESSIONS_LIST[0] || '2026-27'
+  );
   const [selectedExam, setSelectedExam] = useState(
     editingItem?.assessmentTag || EXAMS_LIST[0].name
   );
@@ -118,6 +130,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
       (PROGRAM_SUBJECTS[ACADEMIC_PROGRAMS[0]] ? PROGRAM_SUBJECTS[ACADEMIC_PROGRAMS[0]][0] : '');
     const chList = buildInitialChapters(editingItem, subj);
 
+    setSelectedSession(editingItem?.session || SESSIONS_LIST[0] || '2026-27');
     setSelectedExam(editingItem?.assessmentTag || EXAMS_LIST[0].name);
     setSelectedProgram(editingItem?.program || ACADEMIC_PROGRAMS[0]);
     setSelectedSubject(subj);
@@ -139,6 +152,33 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isOpen, onClose]);
 
+  const chapterListContainerRef = useRef(null);
+  const activeChapterCardRef = useRef(null);
+
+  // Auto-scroll Chapter-Wise Preview list so active chapter remains comfortably visible
+  const scrollToActiveChapter = useCallback((smooth = true) => {
+    if (!activeChapterCardRef.current || !chapterListContainerRef.current) return;
+    const container = chapterListContainerRef.current;
+    const card = activeChapterCardRef.current;
+
+    const cardTop = card.offsetTop;
+    const cardBottom = cardTop + card.offsetHeight;
+    const containerScrollTop = container.scrollTop;
+    const containerHeight = container.clientHeight;
+
+    if (cardTop < containerScrollTop) {
+      container.scrollTo({
+        top: Math.max(0, cardTop - 8),
+        behavior: smooth ? 'smooth' : 'auto',
+      });
+    } else if (cardBottom > containerScrollTop + containerHeight) {
+      container.scrollTo({
+        top: cardBottom - containerHeight + 8,
+        behavior: smooth ? 'smooth' : 'auto',
+      });
+    }
+  }, []);
+
   const categories = useMemo(
     () => ['All', ...new Set(MASTER_QUESTION_TYPES.map((m) => m.category))],
     []
@@ -152,6 +192,28 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
     return counts;
   }, []);
 
+  const categoryOptions = useMemo(() => {
+    return categories.map((cat) => ({
+      value: cat,
+      label: cat === 'All' ? 'All Categories' : cat,
+      badge: categoryCounts[cat] || 0,
+      dotColor: cat === 'All' ? undefined : getCategoryDotColor(cat),
+    }));
+  }, [categories, categoryCounts]);
+
+  const chapterOptions = useMemo(() => {
+    return chapters.map((ch, idx) => {
+      const count = (chapterQuestionTypes[ch] || []).length;
+      return {
+        value: ch,
+        label: `Ch ${idx + 1}: ${ch}`,
+        badge: count > 0 ? count : 'Pending',
+        tone: count > 0 ? 'emerald' : 'amber',
+        dotColor: count > 0 ? 'bg-emerald-500' : 'bg-amber-500',
+      };
+    });
+  }, [chapters, chapterQuestionTypes]);
+
   const activeChapterTypes = useMemo(
     () => chapterQuestionTypes[activeChapter] || [],
     [chapterQuestionTypes, activeChapter]
@@ -161,6 +223,23 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
     () => new Set(activeChapterTypes.map((t) => t.id)),
     [activeChapterTypes]
   );
+
+  // Selected count filtered by the active category (or total for 'All')
+  const currentCategorySelectedCount = useMemo(() => {
+    if (categoryFilter === 'All') {
+      return activeChapterTypes.length;
+    }
+    return activeChapterTypes.filter((t) => t.category === categoryFilter).length;
+  }, [activeChapterTypes, categoryFilter]);
+
+  // Trigger auto-scroll on active chapter change or question type assignment
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      scrollToActiveChapter(true);
+    }, 40);
+    return () => clearTimeout(timer);
+  }, [isOpen, activeChapter, activeChapterTypes.length, scrollToActiveChapter]);
 
   // Deduplicated unique types across all chapters + aggregate stats
   const { uniqueAllTypes, totalAssignments, configuredChaptersCount } = useMemo(() => {
@@ -204,6 +283,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
 
   const activeChapterIdx = Math.max(0, chapters.indexOf(activeChapter));
   const pendingChaptersCount = chapters.length - configuredChaptersCount;
+  const isAllChaptersConfigured = chapters.length > 0 && pendingChaptersCount === 0;
   const chapterProgressPct =
     chapters.length > 0 ? Math.round((configuredChaptersCount / chapters.length) * 100) : 0;
 
@@ -234,14 +314,14 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
       const nextList = exists
         ? current.filter((t) => t.id !== mType.id)
         : [
-            ...current,
-            {
-              id: mType.id,
-              name: mType.name,
-              category: mType.category,
-              description: mType.description,
-            },
-          ];
+          ...current,
+          {
+            id: mType.id,
+            name: mType.name,
+            category: mType.category,
+            description: mType.description,
+          },
+        ];
       return { ...prev, [activeChapter]: nextList };
     });
   };
@@ -253,37 +333,17 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
     }));
   };
 
-  const handleSelectAllVisible = () => {
-    if (!activeChapter) return;
-    setChapterQuestionTypes((prev) => {
-      const current = prev[activeChapter] || [];
-      const existingIds = new Set(current.map((t) => t.id));
-      const toAdd = filteredMasterTypes
-        .filter((m) => !existingIds.has(m.id))
-        .map((m) => ({
-          id: m.id,
-          name: m.name,
-          category: m.category,
-          description: m.description,
-        }));
-      return { ...prev, [activeChapter]: [...current, ...toAdd] };
-    });
-  };
-
   const handleClearActiveChapter = () => {
     if (!activeChapter) return;
     setChapterQuestionTypes((prev) => ({ ...prev, [activeChapter]: [] }));
   };
 
-  const handleStepChapter = (delta) => {
-    const nextIdx = activeChapterIdx + delta;
-    if (nextIdx >= 0 && nextIdx < chapters.length) {
-      setActiveChapter(chapters[nextIdx]);
-      setShowSelectedOnly(false);
-    }
-  };
-
   const handleSubmit = (status) => {
+    if (status === 'Approved' && !isAllChaptersConfigured) {
+      alert(`Please assign at least one question type to all ${chapters.length} chapters before submitting (${pendingChaptersCount} still pending).`);
+      return;
+    }
+
     if (uniqueAllTypes.length === 0) {
       alert('Please assign at least one question type to a chapter before saving.');
       return;
@@ -291,6 +351,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
 
     const payload = {
       id: editingItem ? editingItem.id : `QTS-SET-${Date.now().toString().slice(-4)}`,
+      session: selectedSession,
       program: selectedProgram,
       subject: selectedSubject,
       department:
@@ -328,7 +389,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
     >
       {/* Full-Area Modern Frosted Glass Form Surface */}
       <div className="w-full h-full bg-white/85 backdrop-blur-xl rounded-3xl border border-white/95 shadow-[0_14px_44px_-10px_rgba(24,24,27,0.12),0_0_0_1px_rgba(232,226,217,0.9)] flex flex-col overflow-hidden animate-ios-reveal">
-        
+
         {/* ── COMPACT MODERN HEADER ── */}
         <div className="px-4 sm:px-6 py-3 bg-white/85 backdrop-blur-lg border-b border-[#E8E2D9] flex flex-wrap items-center justify-between gap-2.5 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
@@ -358,6 +419,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
               </div>
               <p className="text-[11px] text-stone-500 mt-0.5 truncate m-0">
                 Assign syllabus question formats per chapter for{' '}
+                <strong className="text-amber-800 font-semibold">{selectedSession}</strong> ·{' '}
                 <strong className="text-[#5B21B6]">{selectedExam}</strong> ·{' '}
                 <strong className="text-stone-700">{selectedProgram}</strong> ·{' '}
                 <strong className="text-[#72102A]">{selectedSubject}</strong>
@@ -366,25 +428,6 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <span
-              className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold ${
-                configuredChaptersCount === chapters.length && chapters.length > 0
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : 'bg-[#FEF3C7]/80 text-[#92400E] border-[#FDE68A]'
-              }`}
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  configuredChaptersCount === chapters.length && chapters.length > 0
-                    ? 'bg-emerald-500'
-                    : 'bg-amber-500'
-                }`}
-              />
-              {configuredChaptersCount}/{chapters.length} Chapters
-            </span>
-            <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FAF0F3] text-[#72102A] border border-[#F2D7DF] text-[11px] font-bold">
-              {totalAssignments} Assigned
-            </span>
             <button
               type="button"
               onClick={onClose}
@@ -400,14 +443,54 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
         {/* ── LOCKED-VIEWPORT OPTIMIZED SPLIT WORKSPACE ── */}
         <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden p-3.5 sm:p-4 bg-gradient-to-br from-[#FAF8F5]/75 via-white/55 to-[#FAF0F3]/35">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 lg:h-full lg:min-h-0">
-            
+
             {/* LEFT MAIN WORKSPACE (8 Cols): Compact Context + Chapter Strip + High-Density Catalogue */}
             <div className="lg:col-span-8 flex flex-col gap-3 lg:h-full lg:min-h-0">
-              
-              {/* SECTION 1: ULTRA-COMPACT ACADEMIC CONTEXT + CHAPTER SELECTOR */}
+
+              {/* SECTION 1: COMPACT ACADEMIC CONTEXT (Session · Exam · Class / Program · Subject) */}
               <div className="bg-white/80 backdrop-blur-md px-3.5 py-2.5 rounded-2xl border border-[#E8E2D9] shadow-[0_2px_10px_rgba(0,0,0,0.025)] shrink-0">
-                {/* Inline Context Strip (Exam · Class / Program · Subject) */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-4 h-4 rounded-full bg-[#72102A] text-white text-[9px] font-extrabold flex items-center justify-center">
+                    1
+                  </span>
+                  <h3
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#374151',
+                      margin: 0,
+                      letterSpacing: '0.04em',
+                    }}
+                    className="uppercase"
+                  >
+                    Academic Context
+                  </h3>
+                </div>
+
+                {/* Inline Context Strip (Session · Exam · Class / Program · Subject) */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {/* Session */}
+                  <div className="min-w-0">
+                    <label className="block text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-0.5">
+                      Session
+                    </label>
+                    {editingItem ? (
+                      <div
+                        title={selectedSession}
+                        className="w-full h-[30px] px-2.5 rounded-xl bg-[#FFFBEB]/90 border border-[#FDE68A] text-[11px] font-bold text-[#92400E] flex items-center truncate"
+                      >
+                        <span className="truncate">{selectedSession}</span>
+                      </div>
+                    ) : (
+                      <CustomDropdown
+                        value={selectedSession}
+                        onChange={(val) => setSelectedSession(val)}
+                        options={SESSIONS_LIST.map((s) => ({ value: s, label: s }))}
+                        searchable={false}
+                      />
+                    )}
+                  </div>
+
                   {/* Exam */}
                   <div className="min-w-0">
                     <label className="block text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-0.5">
@@ -477,78 +560,11 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                     )}
                   </div>
                 </div>
-
-                {/* Chapter Selector Bar */}
-                <div className="mt-2.5 pt-2.5 border-t border-stone-100">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="w-4 h-4 rounded-full bg-[#72102A] text-white text-[9px] font-extrabold flex items-center justify-center">
-                      1
-                    </span>
-                    <span className="text-[10.5px] font-bold text-stone-700 uppercase tracking-wider">
-                      Select Chapter
-                    </span>
-                    <span className="text-[10px] text-stone-400 font-medium">
-                      ({chapters.length} chapters)
-                    </span>
-                  </div>
-
-                  {/* Interactive Chapter Pills */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 custom-scrollbar">
-                    {chapters.map((ch, idx) => {
-                      const isActive = ch === activeChapter;
-                      const count = (chapterQuestionTypes[ch] || []).length;
-                      const isConfigured = count > 0;
-                      return (
-                        <button
-                          key={ch}
-                          type="button"
-                          onClick={() => {
-                            setActiveChapter(ch);
-                            setShowSelectedOnly(false);
-                          }}
-                          style={{ outline: 'none' }}
-                          title={ch}
-                          className={`group shrink-0 px-3 py-1.5 rounded-xl border text-[11.5px] font-semibold transition-all duration-150 cursor-pointer inline-flex items-center gap-2 max-w-[260px] ${
-                            isActive
-                              ? 'bg-gradient-to-r from-[#72102A] to-[#5C0C21] text-white border-[#72102A] shadow-[0_4px_12px_-3px_rgba(114,16,42,0.35)]'
-                              : isConfigured
-                              ? 'bg-emerald-50/60 hover:bg-emerald-50 text-stone-800 border-emerald-200/90 hover:border-emerald-300'
-                              : 'bg-[#FAF8F5] hover:bg-white text-stone-700 border-stone-200/90 hover:border-[#72102A]/40'
-                          }`}
-                        >
-                          <span
-                            className={`text-[9.5px] font-extrabold px-1.5 py-0.5 rounded-md leading-none shrink-0 ${
-                              isActive
-                                ? 'bg-white/20 text-white'
-                                : isConfigured
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-stone-200/80 text-stone-500'
-                            }`}
-                          >
-                            Ch {idx + 1}
-                          </span>
-                          <span className="truncate">{ch}</span>
-                          <span
-                            className={`min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-extrabold inline-flex items-center justify-center shrink-0 ${
-                              isActive
-                                ? 'bg-white text-[#72102A]'
-                                : isConfigured
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-amber-100 text-amber-700 border border-amber-200'
-                            }`}
-                          >
-                            {count}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
               </div>
 
               {/* SECTION 2: HIGH-DENSITY MASTER CATALOGUE FOR ACTIVE CHAPTER */}
               <div className="bg-white/80 backdrop-blur-md p-3.5 rounded-2xl border border-[#E8E2D9] shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex-1 min-h-0 flex flex-col gap-2.5">
-                
+
                 {/* Catalogue Header Row */}
                 <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
                   <div className="flex items-center gap-2 min-w-0">
@@ -556,119 +572,132 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                       2
                     </span>
                     <span className="text-[10.5px] font-bold text-stone-600 uppercase tracking-wider shrink-0">
-                      Question Types for
+                      Question Types for :
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-[#FAF0F3] text-[#72102A] border border-[#F2D7DF] text-[11px] font-bold truncate max-w-[260px]">
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#FAF0F3] text-[#72102A] border border-[#F2D7DF] text-[11px] font-bold truncate max-w-[450px]">
                       Ch {activeChapterIdx + 1}: {activeChapter}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={handleSelectAllVisible}
-                      style={{ outline: 'none' }}
-                      className="text-[11px] font-semibold text-[#72102A] hover:underline cursor-pointer"
-                    >
-                      Select Visible ({filteredMasterTypes.length})
-                    </button>
                     {activeChapterTypes.length > 0 && (
-                      <>
-                        <span className="text-stone-300">·</span>
-                        <button
-                          type="button"
-                          onClick={handleClearActiveChapter}
-                          style={{ outline: 'none' }}
-                          className="text-[11px] font-semibold text-stone-500 hover:text-rose-600 cursor-pointer"
-                        >
-                          Clear Chapter
-                        </button>
-                      </>
+                      <button
+                        type="button"
+                        onClick={handleClearActiveChapter}
+                        style={{ outline: 'none' }}
+                        className="text-[11px] font-semibold text-stone-500 hover:text-rose-600 cursor-pointer"
+                      >
+                        Clear Chapter
+                      </button>
                     )}
                   </div>
                 </div>
 
-                {/* Single-Row Search + Selected Toggle + Horizontal Scrollable Categories */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 shrink-0">
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <div className="relative w-full sm:w-[205px]">
-                      <svg
-                        className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
+                {/* Search + Chapter Dropdown + Category Dropdown + Selected Filter Toolbar */}
+                <div className="flex flex-wrap items-center justify-start gap-2 shrink-0">
+                  {/* Search Input (Expanded slightly to display full placeholder and query) */}
+                  <div className="relative w-full sm:w-[185px] md:w-[195px] shrink-0">
+                    <svg
+                      className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={catalogSearch}
+                      onChange={(e) => setCatalogSearch(e.target.value)}
+                      placeholder="Search 190+ types..."
+                      style={{ height: '36px', fontSize: '12px', borderRadius: '9999px' }}
+                      className="w-full h-[36px] bg-[#FAF9F7] border border-stone-200/90 rounded-full pl-8 pr-6 text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:border-[#72102A] focus:bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+                    />
+                    {catalogSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setCatalogSearch('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 text-xs cursor-pointer"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      <input
-                        type="text"
-                        value={catalogSearch}
-                        onChange={(e) => setCatalogSearch(e.target.value)}
-                        placeholder="Search 190+ types..."
-                        style={{ height: '32px', fontSize: '11.5px', borderRadius: '9999px' }}
-                        className="w-full bg-[#FAF9F7] border border-stone-200/90 rounded-full pl-8 pr-6 text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:border-[#72102A] focus:bg-white transition-all"
-                      />
-                      {catalogSearch && (
-                        <button
-                          type="button"
-                          onClick={() => setCatalogSearch('')}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 text-[10px] cursor-pointer"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
+                        ✕
+                      </button>
+                    )}
+                  </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setShowSelectedOnly((prev) => !prev)}
-                      style={{ outline: 'none' }}
-                      className={`h-[32px] px-2.5 rounded-full text-[11px] font-bold border transition-all shrink-0 cursor-pointer inline-flex items-center gap-1 ${
-                        showSelectedOnly
-                          ? 'bg-[#72102A] text-white border-[#72102A]'
-                          : 'bg-white text-stone-600 border-stone-200/90 hover:border-[#72102A]/40 hover:text-[#72102A]'
+                  {/* Chapter Filter Dropdown (Calibrated width to show full chapter title and keep Reset Filter on same row) */}
+                  <CustomDropdown
+                    value={activeChapter}
+                    onChange={(val) => {
+                      setActiveChapter(val);
+                      setShowSelectedOnly(false);
+                    }}
+                    options={chapterOptions}
+                    variant="default"
+                    rounded="full"
+                    placeholder="Select Chapter"
+                    className="w-full sm:w-[270px] md:w-[295px] lg:w-[310px] shrink-0"
+                  />
+
+                  {/* Category Filter Dropdown */}
+                  <CustomDropdown
+                    value={categoryFilter}
+                    onChange={(val) => {
+                      setCategoryFilter(val);
+                      setShowSelectedOnly(false);
+                    }}
+                    options={categoryOptions}
+                    variant={categoryFilter !== 'All' ? 'maroon' : 'default'}
+                    rounded="full"
+                    placeholder="All Categories"
+                    className="w-full sm:w-[155px] md:w-[165px] shrink-0"
+                  />
+
+                  {/* Selected Only Toggle (Enabled across all categories with category-specific count) */}
+                  <button
+                    type="button"
+                    onClick={() => setShowSelectedOnly((prev) => !prev)}
+                    title={
+                      showSelectedOnly
+                        ? 'Show all question types in this category'
+                        : `Show only selected question types (${currentCategorySelectedCount})`
+                    }
+                    style={{ outline: 'none' }}
+                    className={`h-[36px] px-3 rounded-full text-xs font-bold border transition-all shrink-0 cursor-pointer inline-flex items-center gap-1.5 ${
+                      showSelectedOnly
+                        ? 'bg-[#72102A] text-white border-[#72102A] shadow-xs'
+                        : 'bg-[#FAF9F7] text-stone-700 border-stone-200/90 hover:border-[#72102A]/40 hover:text-[#72102A] hover:bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]'
+                    }`}
+                  >
+                    <span>Selected</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                        showSelectedOnly ? 'bg-white/20 text-white' : 'bg-[#FAF0F3] text-[#72102A]'
                       }`}
                     >
-                      <span>Selected</span>
-                      <span
-                        className={`text-[9.5px] px-1.5 py-0.2 rounded-full ${
-                          showSelectedOnly ? 'bg-white/20 text-white' : 'bg-[#FAF0F3] text-[#72102A]'
-                        }`}
-                      >
-                        {activeChapterTypes.length}
-                      </span>
-                    </button>
-                  </div>
+                      {currentCategorySelectedCount}
+                    </span>
+                  </button>
 
-                  {/* Horizontal Single-Row Category Strip */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 flex-1 min-w-0 custom-scrollbar">
-                    {categories.map((cat) => {
-                      const active = categoryFilter === cat;
-                      return (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => setCategoryFilter(cat)}
-                          style={{ outline: 'none' }}
-                          className={`shrink-0 px-2.5 py-1 rounded-full text-[10.5px] font-semibold transition-all cursor-pointer inline-flex items-center gap-1 ${
-                            active
-                              ? 'bg-[#72102A] text-white shadow-2xs'
-                              : 'bg-[#FAF8F5] text-stone-600 border border-stone-200/80 hover:border-stone-300 hover:text-stone-900'
-                          }`}
-                        >
-                          <span>{cat}</span>
-                          <span
-                            className={`text-[9.5px] font-bold px-1 rounded-full leading-tight ${
-                              active ? 'bg-white/20 text-white' : 'bg-stone-200/75 text-stone-500'
-                            }`}
-                          >
-                            {categoryCounts[cat] || 0}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {/* Reset Filters (Right-Aligned with ml-auto) */}
+                  {(catalogSearch || categoryFilter !== 'All' || showSelectedOnly) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCatalogSearch('');
+                        setCategoryFilter('All');
+                        setShowSelectedOnly(false);
+                      }}
+                      style={{ outline: 'none' }}
+                      className="ml-auto h-[36px] px-3 rounded-full bg-[#FAF0F3] hover:bg-[#F5E6EA] text-[#72102A] border border-[#F2D7DF] text-xs font-semibold transition-all inline-flex items-center gap-1.5 cursor-pointer shrink-0"
+                      title="Reset search and filters"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span>Reset Filter</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* High-Density Scrollable Master Types Grid */}
@@ -677,15 +706,19 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                     <p className="font-semibold text-stone-500 m-0">
                       {showSelectedOnly
                         ? `No question types selected for ${activeChapter} yet.`
-                        : 'No question types match your search.'}
+                        : 'No question types match your search or category filter.'}
                     </p>
-                    {showSelectedOnly && (
+                    {(catalogSearch || categoryFilter !== 'All' || showSelectedOnly) && (
                       <button
                         type="button"
-                        onClick={() => setShowSelectedOnly(false)}
+                        onClick={() => {
+                          setCatalogSearch('');
+                          setCategoryFilter('All');
+                          setShowSelectedOnly(false);
+                        }}
                         className="mt-2 text-[11px] font-bold text-[#72102A] hover:underline cursor-pointer"
                       >
-                        Show all master question types
+                        Reset filters to view all question types
                       </button>
                     )}
                   </div>
@@ -700,28 +733,25 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                             type="button"
                             onClick={() => toggleMasterType(mType)}
                             style={{ outline: 'none' }}
-                            className={`text-left p-3 rounded-xl border transition-all duration-150 cursor-pointer flex flex-col justify-between gap-2 group ${
-                              isSelected
-                                ? 'bg-gradient-to-br from-[#FDF4F6] via-white to-[#FAF0F3]/70 border-[#72102A] ring-1 ring-[#72102A]/15 shadow-[0_4px_14px_-6px_rgba(114,16,42,0.2)]'
-                                : 'bg-white/90 border-stone-200/85 hover:border-[#72102A]/35 hover:bg-white hover:shadow-xs'
-                            }`}
+                            className={`text-left p-3 rounded-xl border transition-all duration-150 cursor-pointer flex flex-col justify-between gap-2 group ${isSelected
+                              ? 'bg-gradient-to-br from-[#FDF4F6] via-white to-[#FAF0F3]/70 border-[#72102A] ring-1 ring-[#72102A]/15 shadow-[0_4px_14px_-6px_rgba(114,16,42,0.2)]'
+                              : 'bg-white/90 border-stone-200/85 hover:border-[#72102A]/35 hover:bg-white hover:shadow-xs'
+                              }`}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <span
-                                className={`font-bold text-[12px] leading-snug transition-colors line-clamp-1 ${
-                                  isSelected ? 'text-[#72102A]' : 'text-stone-900 group-hover:text-[#72102A]'
-                                }`}
+                                className={`font-bold text-[12px] leading-snug transition-colors line-clamp-1 ${isSelected ? 'text-[#72102A]' : 'text-stone-900 group-hover:text-[#72102A]'
+                                  }`}
                                 title={mType.name}
                               >
                                 {mType.name}
                               </span>
 
                               <span
-                                className={`w-4.5 h-4.5 min-w-[18px] min-h-[18px] rounded-full flex items-center justify-center shrink-0 transition-all duration-150 ${
-                                  isSelected
-                                    ? 'bg-[#72102A] text-white scale-105'
-                                    : 'bg-white border-2 border-stone-300 group-hover:border-[#72102A]/50'
-                                }`}
+                                className={`w-4.5 h-4.5 min-w-[18px] min-h-[18px] rounded-full flex items-center justify-center shrink-0 transition-all duration-150 ${isSelected
+                                  ? 'bg-[#72102A] text-white scale-105'
+                                  : 'bg-white border-2 border-stone-300 group-hover:border-[#72102A]/50'
+                                  }`}
                               >
                                 {isSelected && (
                                   <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.2}>
@@ -744,11 +774,10 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                                 {mType.category}
                               </span>
                               <span
-                                className={`text-[10px] font-bold transition-opacity ${
-                                  isSelected
-                                    ? 'text-[#72102A] opacity-100'
-                                    : 'text-stone-400 opacity-0 group-hover:opacity-100'
-                                }`}
+                                className={`text-[10px] font-bold transition-opacity ${isSelected
+                                  ? 'text-[#72102A] opacity-100'
+                                  : 'text-stone-400 opacity-0 group-hover:opacity-100'
+                                  }`}
                               >
                                 {isSelected ? 'Added' : '+ Add'}
                               </span>
@@ -765,7 +794,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
             {/* RIGHT PANEL (4 Cols): CHAPTER-WISE LIVE SUMMARY & QUICK STEPPER */}
             <div className="lg:col-span-4 flex flex-col lg:h-full lg:min-h-0">
               <div className="bg-white/85 backdrop-blur-lg p-3.5 rounded-2xl border border-[#E8E2D9] shadow-[0_4px_20px_-6px_rgba(24,24,27,0.06)] flex flex-col flex-1 min-h-0">
-                
+
                 {/* Summary Header + Progress Bar */}
                 <div className="pb-3 border-b border-stone-100 shrink-0">
                   <div className="flex items-center justify-between gap-2">
@@ -814,29 +843,38 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                   </div>
                 </div>
 
-                {/* Chapter-Wise Grouped List */}
-                <div className="flex-1 min-h-[180px] lg:min-h-0 py-2.5 overflow-y-auto custom-scrollbar space-y-2 pr-0.5">
+                {/* Chapter-Wise Grouped List (Maximum Height & High Tile Visibility) */}
+                <div
+                  ref={chapterListContainerRef}
+                  className="relative flex-1 min-h-[220px] lg:min-h-0 py-2 overflow-y-auto custom-scrollbar space-y-2.5 pr-0.5"
+                >
                   {chapters.map((ch, idx) => {
                     const isActive = ch === activeChapter;
                     const types = chapterQuestionTypes[ch] || [];
                     return (
                       <div
                         key={ch}
-                        onClick={() => setActiveChapter(ch)}
-                        className={`rounded-xl border p-2.5 transition-all cursor-pointer ${
+                        ref={isActive ? activeChapterCardRef : null}
+                        onClick={() => {
+                          setActiveChapter(ch);
+                          setShowSelectedOnly(false);
+                        }}
+                        className={`rounded-2xl border p-3 transition-all duration-150 cursor-pointer ${
                           isActive
-                            ? 'bg-[#FDF7F8] border-[#72102A]/45 shadow-[0_2px_10px_-4px_rgba(114,16,42,0.18)]'
-                            : 'bg-[#FAF8F5]/80 hover:bg-white border-stone-200/80 hover:border-stone-300'
+                            ? 'bg-[#FFF9FA] border-[#72102A]/55 shadow-[0_4px_16px_-4px_rgba(114,16,42,0.18)] ring-1 ring-[#72102A]/20'
+                            : types.length > 0
+                            ? 'bg-white/95 hover:bg-[#FAF8F5] border-emerald-200/90 hover:border-emerald-300 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
+                            : 'bg-[#FAF8F5]/85 hover:bg-white border-stone-200/85 hover:border-stone-300'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0">
                             <span
-                              className={`text-[9.5px] font-extrabold px-1.5 py-0.5 rounded-md leading-none shrink-0 ${
+                              className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg leading-none shrink-0 ${
                                 isActive
-                                  ? 'bg-[#72102A] text-white'
+                                  ? 'bg-[#72102A] text-white shadow-xs'
                                   : types.length > 0
-                                  ? 'bg-emerald-100 text-emerald-700'
+                                  ? 'bg-emerald-100 text-emerald-800'
                                   : 'bg-stone-200 text-stone-600'
                               }`}
                             >
@@ -844,8 +882,8 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                             </span>
                             <span
                               title={ch}
-                              className={`text-[11.5px] font-bold truncate ${
-                                isActive ? 'text-[#72102A]' : 'text-stone-800'
+                              className={`text-xs font-extrabold truncate ${
+                                isActive ? 'text-[#72102A]' : 'text-stone-850'
                               }`}
                             >
                               {ch}
@@ -853,9 +891,9 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                           </div>
 
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                            className={`text-[10.5px] font-bold px-2.5 py-0.5 rounded-full shrink-0 ${
                               types.length > 0
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs'
                                 : 'bg-amber-50 text-amber-700 border border-amber-200'
                             }`}
                           >
@@ -917,97 +955,38 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                   })}
                 </div>
 
-                {/* Pinned Bottom Quick Chapter Stepper */}
-                {chapters.length > 1 && (
-                  <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between gap-2 shrink-0">
-                    <button
-                      type="button"
-                      disabled={activeChapterIdx === 0}
-                      onClick={() => handleStepChapter(-1)}
-                      style={{ outline: 'none' }}
-                      className={`h-8 px-3 rounded-full text-[11px] font-semibold border transition-all inline-flex items-center gap-1 ${
-                        activeChapterIdx === 0
-                          ? 'bg-stone-50 text-stone-300 border-stone-200/70 cursor-not-allowed'
-                          : 'bg-white hover:bg-[#FAF0F3] text-stone-700 hover:text-[#72102A] border-stone-200 hover:border-[#E6C4CD] cursor-pointer'
-                      }`}
-                    >
-                      <span>←</span>
-                      <span>Prev</span>
-                    </button>
-
-                    <span className="text-[11px] font-bold text-stone-500">
-                      Chapter {activeChapterIdx + 1} / {chapters.length}
-                    </span>
-
-                    <button
-                      type="button"
-                      disabled={activeChapterIdx === chapters.length - 1}
-                      onClick={() => handleStepChapter(1)}
-                      style={{ outline: 'none' }}
-                      className={`h-8 px-3 rounded-full text-[11px] font-semibold border transition-all inline-flex items-center gap-1 ${
-                        activeChapterIdx === chapters.length - 1
-                          ? 'bg-stone-50 text-stone-300 border-stone-200/70 cursor-not-allowed'
-                          : 'bg-white hover:bg-[#FAF0F3] text-stone-700 hover:text-[#72102A] border-stone-200 hover:border-[#E6C4CD] cursor-pointer'
-                      }`}
-                    >
-                      <span>Next</span>
-                      <span>→</span>
-                    </button>
-                  </div>
-                )}
+                {/* Section 3 Action Buttons (Integrated into Chapter-Wise Preview) */}
+                <div className="pt-3 mt-1 border-t border-stone-200/80 flex items-center gap-2.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleSubmit('Draft')}
+                    style={{ outline: 'none' }}
+                    className="flex-1 h-9 px-3 rounded-full border border-stone-200 bg-[#FAF8F5] hover:bg-stone-100 text-stone-700 font-bold text-xs transition-all cursor-pointer text-center"
+                  >
+                    Save as Draft
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!isAllChaptersConfigured}
+                    onClick={() => isAllChaptersConfigured && handleSubmit('Approved')}
+                    title={
+                      isAllChaptersConfigured
+                        ? 'Submit Question Types'
+                        : `Assign at least one question type to all chapters to submit (${pendingChaptersCount} pending)`
+                    }
+                    style={{ outline: 'none' }}
+                    className={`flex-1 h-9 px-3 rounded-full font-bold text-xs transition-all inline-flex items-center justify-center gap-1.5 ${
+                      isAllChaptersConfigured
+                        ? 'bg-gradient-to-r from-[#72102A] to-[#54081C] hover:from-[#851633] hover:to-[#680C25] text-white shadow-md shadow-[#72102A]/20 active:scale-95 cursor-pointer'
+                        : 'bg-stone-200 text-stone-400 border border-stone-300/80 cursor-not-allowed select-none shadow-none'
+                    }`}
+                  >
+                    <span>Submit Question Types</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-          </div>
-        </div>
-
-        {/* ── STICKY FROSTED FOOTER BAR ── */}
-        <div className="px-4 sm:px-6 py-3 bg-white/90 backdrop-blur-xl border-t border-[#E8E2D9] flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              style={{ outline: 'none' }}
-              className="h-9 px-5 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 hover:text-stone-900 text-xs font-semibold transition-all cursor-pointer"
-            >
-              Cancel
-            </button>
-
-            {pendingChaptersCount > 0 ? (
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-700">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                {pendingChaptersCount} {pendingChaptersCount === 1 ? 'chapter' : 'chapters'} still pending
-              </span>
-            ) : (
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                All {chapters.length} chapters configured
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => handleSubmit('Draft')}
-              style={{ outline: 'none' }}
-              className="h-9 px-5 rounded-full border border-stone-200 bg-[#FAF8F5] hover:bg-stone-100 text-stone-700 font-bold text-xs transition-all cursor-pointer"
-            >
-              Save as Draft
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSubmit('Approved')}
-              style={{ outline: 'none' }}
-              className="h-9 px-6 rounded-full bg-gradient-to-r from-[#72102A] to-[#54081C] hover:from-[#851633] hover:to-[#680C25] text-white font-bold text-xs shadow-md shadow-[#72102A]/20 transition-all active:scale-95 inline-flex items-center gap-2 cursor-pointer"
-            >
-              <span>Submit Question Types</span>
-              {totalAssignments > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-extrabold leading-none">
-                  {configuredChaptersCount}/{chapters.length} Ch
-                </span>
-              )}
-            </button>
           </div>
         </div>
 

@@ -168,22 +168,20 @@ div:focus:not(:focus-visible) {
   background-color: #9C9790;
 }
 
-/* ── Animations ── */
+/* ── Animations (Performance-Tuned: Snappy 100-120ms transitions) ── */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -194,7 +192,7 @@ div:focus:not(:focus-visible) {
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.985);
   }
   to {
     opacity: 1;
@@ -203,30 +201,37 @@ div:focus:not(:focus-visible) {
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.1s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeInUp 0.12s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.2s ease-out;
+  animation: scaleIn 0.1s ease-out;
 }
 
 @keyframes iosLiquidReveal {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.992);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 .animate-ios-reveal {
-  animation: iosLiquidReveal 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: iosLiquidReveal 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 100px;
 }
 
 /* ── Text Selection ── */

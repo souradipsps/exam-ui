@@ -216,14 +216,9 @@ export default function QuestionCreation({ showToast }) {
     meta.lastTime = now;
 
     const raw = meta.startProgress + dx / meta.travelDistance;
-    // Soft iOS rubber-band damping past edges
-    const damped =
-      raw < 0
-        ? raw * 0.14
-        : raw > 1
-        ? 1 + (raw - 1) * 0.14
-        : raw;
-    setDragProgress(damped);
+    // Constrain thumb strictly within track bounds so it cannot poke out past the rounded pill
+    const clamped = Math.max(0, Math.min(1, raw));
+    setDragProgress(clamped);
   };
 
   const handleTabPointerUp = (e) => {
@@ -919,7 +914,7 @@ export default function QuestionCreation({ showToast }) {
         onPointerMove={handleTabPointerMove}
         onPointerUp={handleTabPointerUp}
         onPointerCancel={handleTabPointerUp}
-        className={`relative grid grid-cols-2 w-full rounded-full p-1.5 mb-4 select-none backdrop-blur-xl border border-white/80 touch-none ${
+        className={`relative grid grid-cols-2 w-full rounded-full p-1.5 mb-4 select-none backdrop-blur-xl border border-white/80 touch-none overflow-hidden ${
           isDraggingTab ? 'cursor-grabbing' : 'cursor-grab'
         }`}
         style={{
@@ -928,7 +923,7 @@ export default function QuestionCreation({ showToast }) {
             'inset 0 1.5px 3px rgba(0, 0, 0, 0.08), inset 0 0 0 1px rgba(114, 16, 42, 0.05), 0 1px 0 rgba(255, 255, 255, 0.9)',
         }}
       >
-        {/* Sliding Liquid Glass Pill Thumb (1:1 Drag Tracking + Silky Spring Snap + Glass Lensing) */}
+        {/* Sliding Liquid Glass Pill Thumb (Smooth 1:1 Tracking — No Squeeze / Deformation) */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute top-1.5 bottom-1.5 left-1.5 will-change-transform"
@@ -938,22 +933,19 @@ export default function QuestionCreation({ showToast }) {
             transition:
               dragProgress !== null
                 ? 'none'
-                : 'transform 580ms cubic-bezier(0.22, 1.16, 0.36, 1)',
+                : 'transform 180ms cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
           <div
-            className="w-full h-full rounded-full will-change-transform"
+            className="w-full h-full rounded-full"
             style={{
-              transform: isThumbLensed ? 'scaleX(1.03) scaleY(1.09)' : 'scaleX(1) scaleY(1)',
-              transition:
-                'transform 300ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 300ms ease, background 300ms ease',
-              background: isThumbLensed
-                ? 'linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 253, 254, 0.84) 58%, rgba(252, 248, 249, 0.90) 100%)'
-                : 'linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(255, 254, 254, 0.96) 65%, rgba(251, 248, 249, 0.97) 100%)',
+              background:
+                'linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(255, 254, 254, 0.96) 65%, rgba(251, 248, 249, 0.97) 100%)',
               backdropFilter: 'blur(18px)',
-              boxShadow: isThumbLensed
-                ? '0 10px 24px -4px rgba(24, 24, 27, 0.12), 0 4px 10px -2px rgba(114, 16, 42, 0.09), inset 0 2px 2.5px rgba(255, 255, 255, 1), inset 0 -1px 1.5px rgba(114, 16, 42, 0.05), 0 0 0 1px rgba(255, 255, 255, 0.95)'
-                : '0 5px 16px -4px rgba(24, 24, 27, 0.10), 0 2px 5px -1px rgba(114, 16, 42, 0.06), inset 0 1.5px 1px rgba(255, 255, 255, 1), inset 0 -1px 1px rgba(114, 16, 42, 0.03), 0 0 0 1px rgba(114, 16, 42, 0.07)',
+              boxShadow: isDraggingTab
+                ? '0 6px 18px -2px rgba(24, 24, 27, 0.14), 0 2px 6px -1px rgba(114, 16, 42, 0.10), inset 0 1.5px 1px rgba(255, 255, 255, 1), 0 0 0 1px rgba(114, 16, 42, 0.08)'
+                : '0 4px 14px -3px rgba(24, 24, 27, 0.10), 0 2px 4px -1px rgba(114, 16, 42, 0.05), inset 0 1.5px 1px rgba(255, 255, 255, 1), 0 0 0 1px rgba(114, 16, 42, 0.06)',
+              transition: 'box-shadow 150ms ease',
             }}
           />
         </div>
@@ -990,8 +982,8 @@ export default function QuestionCreation({ showToast }) {
           <span
             className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 ease-out ${
               visualTab === 'types'
-                ? 'scale-100 bg-gradient-to-b from-[#8B1F3A] to-[#630B22] text-white shadow-[0_2px_8px_rgba(114,16,42,0.42),inset_0_1px_0.5px_rgba(255,255,255,0.35)]'
-                : 'scale-95 bg-stone-300/70 text-stone-500 group-hover:scale-105 group-hover:bg-[#72102A]/15 group-hover:text-[#72102A]'
+                ? 'bg-gradient-to-b from-[#8B1F3A] to-[#630B22] text-white shadow-[0_2px_8px_rgba(114,16,42,0.42),inset_0_1px_0.5px_rgba(255,255,255,0.35)]'
+                : 'bg-stone-300/70 text-stone-500  group-hover:bg-[#72102A]/15 group-hover:text-[#72102A]'
             }`}
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
@@ -1000,7 +992,7 @@ export default function QuestionCreation({ showToast }) {
           </span>
           <span
             className={`relative z-10 inline-block transition-transform duration-200 ease-out ${
-              visualTab === 'types' ? 'scale-100' : 'group-hover:scale-[1.05]'
+              visualTab === 'types' ? 'scale-100' : ''
             }`}
           >
             Question Types
@@ -1009,7 +1001,7 @@ export default function QuestionCreation({ showToast }) {
             className={`relative z-10 px-2 py-0.5 rounded-full text-[10.5px] font-bold leading-none transition-all duration-200 ease-out ${
               visualTab === 'types'
                 ? 'bg-[#72102A] text-white shadow-[0_2px_6px_rgba(114,16,42,0.28)]'
-                : 'bg-black/[0.06] text-stone-600 group-hover:bg-[#72102A]/12 group-hover:text-[#72102A] group-hover:scale-105'
+                : 'bg-black/[0.06] text-stone-600 group-hover:bg-[#72102A]/12 group-hover:text-[#72102A] '
             }`}
           >
             {questionTypeSets.length}
@@ -1048,8 +1040,8 @@ export default function QuestionCreation({ showToast }) {
           <span
             className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 ease-out ${
               visualTab === 'questions'
-                ? 'scale-100 bg-gradient-to-b from-[#8B1F3A] to-[#630B22] text-white shadow-[0_2px_8px_rgba(114,16,42,0.42),inset_0_1px_0.5px_rgba(255,255,255,0.35)]'
-                : 'scale-95 bg-stone-300/70 text-stone-500 group-hover:scale-105 group-hover:bg-[#72102A]/15 group-hover:text-[#72102A]'
+                ? 'bg-gradient-to-b from-[#8B1F3A] to-[#630B22] text-white shadow-[0_2px_8px_rgba(114,16,42,0.42),inset_0_1px_0.5px_rgba(255,255,255,0.35)]'
+                : 'bg-stone-300/70 text-stone-500  group-hover:bg-[#72102A]/15 group-hover:text-[#72102A]'
             }`}
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
@@ -1058,7 +1050,7 @@ export default function QuestionCreation({ showToast }) {
           </span>
           <span
             className={`relative z-10 inline-block transition-transform duration-200 ease-out ${
-              visualTab === 'questions' ? 'scale-100' : 'group-hover:scale-[1.05]'
+              visualTab === 'questions' ? 'scale-100' : ''
             }`}
           >
             Questions
@@ -1067,7 +1059,7 @@ export default function QuestionCreation({ showToast }) {
             className={`relative z-10 px-2 py-0.5 rounded-full text-[10.5px] font-bold leading-none transition-all duration-200 ease-out ${
               visualTab === 'questions'
                 ? 'bg-[#72102A] text-white shadow-[0_2px_6px_rgba(114,16,42,0.28)]'
-                : 'bg-black/[0.06] text-stone-600 group-hover:bg-[#72102A]/12 group-hover:text-[#72102A] group-hover:scale-105'
+                : 'bg-black/[0.06] text-stone-600 group-hover:bg-[#72102A]/12 group-hover:text-[#72102A] '
             }`}
           >
             {questions.length}
@@ -1671,41 +1663,52 @@ export default function QuestionCreation({ showToast }) {
         </div>
       )}
 
-      {/* ── MODALS ── */}
-      <CreateQuestionTypeModal
-        isOpen={isTypeModalOpen}
-        onClose={() => setIsTypeModalOpen(false)}
-        onSave={handleSaveQuestionTypeSet}
-        editingItem={editingType}
-      />
+      {/* ── MODALS (Keyed & Conditionally Mounted for Instant Rendering) ── */}
+      {isTypeModalOpen && (
+        <CreateQuestionTypeModal
+          key={editingType?.id || 'new-type'}
+          isOpen={isTypeModalOpen}
+          onClose={() => setIsTypeModalOpen(false)}
+          onSave={handleSaveQuestionTypeSet}
+          editingItem={editingType}
+        />
+      )}
 
-      <CreateQuestionModal
-        isOpen={isQuestionModalOpen}
-        onClose={() => setIsQuestionModalOpen(false)}
-        onSave={handleSaveQuestion}
-        existingQuestions={questions}
-        editingItem={editingQuestion}
-      />
+      {isQuestionModalOpen && (
+        <CreateQuestionModal
+          key={editingQuestion?.id || 'new-q'}
+          isOpen={isQuestionModalOpen}
+          onClose={() => setIsQuestionModalOpen(false)}
+          onSave={handleSaveQuestion}
+          existingQuestions={questions}
+          editingItem={editingQuestion}
+        />
+      )}
 
-      <QuestionViewModal
-        isOpen={!!viewingQuestion}
-        question={viewingQuestion}
-        onClose={() => setViewingQuestion(null)}
-        onEdit={(q) => {
-          setEditingQuestion(q);
-          setIsQuestionModalOpen(true);
-        }}
-      />
+      {!!viewingQuestion && (
+        <QuestionViewModal
+          isOpen={!!viewingQuestion}
+          question={viewingQuestion}
+          onClose={() => setViewingQuestion(null)}
+          onEdit={(q) => {
+            setEditingQuestion(q);
+            setIsQuestionModalOpen(true);
+          }}
+        />
+      )}
 
-      <QuestionTypeViewModal
-        isOpen={!!viewingType}
-        questionType={viewingType}
-        onClose={() => setViewingType(null)}
-        onEdit={(qt) => {
-          setEditingType(qt);
-          setIsTypeModalOpen(true);
-        }}
-      />
+      {!!viewingType && (
+        <QuestionTypeViewModal
+          key={viewingType?.id || 'view-type'}
+          isOpen={!!viewingType}
+          questionType={viewingType}
+          onClose={() => setViewingType(null)}
+          onEdit={(qt) => {
+            setEditingType(qt);
+            setIsTypeModalOpen(true);
+          }}
+        />
+      )}
 
       <DeleteConfirmModal
         isOpen={!!deleteTarget}

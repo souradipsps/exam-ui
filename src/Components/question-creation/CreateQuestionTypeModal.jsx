@@ -140,25 +140,29 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
     (editingItem?.id && FALLBACK_DUE_DATES[editingItem.id]) ||
     '28 Nov 2026';
 
-  // Sync local state whenever modal opens or target course changes
+  // Sync local state ONLY when switching to a different editingItem (avoids redundant initial double-render)
+  const prevEditingIdRef = useRef(editingItem?.id);
   useEffect(() => {
     if (!isOpen) return;
-    setShowClearConfirm(false);
-    const subj =
-      editingItem?.subject ||
-      (PROGRAM_SUBJECTS[ACADEMIC_PROGRAMS[0]] ? PROGRAM_SUBJECTS[ACADEMIC_PROGRAMS[0]][0] : '');
-    const chList = buildInitialChapters(editingItem, subj);
+    if (editingItem?.id !== prevEditingIdRef.current) {
+      prevEditingIdRef.current = editingItem?.id;
+      setShowClearConfirm(false);
+      const subj =
+        editingItem?.subject ||
+        (PROGRAM_SUBJECTS[ACADEMIC_PROGRAMS[0]] ? PROGRAM_SUBJECTS[ACADEMIC_PROGRAMS[0]][0] : '');
+      const chList = buildInitialChapters(editingItem, subj);
 
-    setSelectedSession(editingItem?.session || SESSIONS_LIST[0] || '2026-27');
-    setSelectedExam(editingItem?.assessmentTag || EXAMS_LIST[0].name);
-    setSelectedProgram(editingItem?.program || ACADEMIC_PROGRAMS[0]);
-    setSelectedSubject(subj);
-    setChapters(chList);
-    setActiveChapter(chList[0] || '');
-    setChapterQuestionTypes(buildInitialChapterMap(editingItem, chList));
-    setCatalogSearch('');
-    setCategoryFilter('All');
-    setShowSelectedOnly(false);
+      setSelectedSession(editingItem?.session || SESSIONS_LIST[0] || '2026-27');
+      setSelectedExam(editingItem?.assessmentTag || EXAMS_LIST[0].name);
+      setSelectedProgram(editingItem?.program || ACADEMIC_PROGRAMS[0]);
+      setSelectedSubject(subj);
+      setChapters(chList);
+      setActiveChapter(chList[0] || '');
+      setChapterQuestionTypes(buildInitialChapterMap(editingItem, chList));
+      setCatalogSearch('');
+      setCategoryFilter('All');
+      setShowSelectedOnly(false);
+    }
   }, [isOpen, editingItem]);
 
   // Close on Escape
@@ -284,6 +288,18 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
     }
     return new Set(activeChapterTypes.map((t) => t.id));
   }, [isAllChapters, chapters, chapterQuestionTypes, activeChapterTypes]);
+
+  // Performance Optimization: Pre-compute assigned counts map across chapters in O(C*T) instead of O(N*C*T) in render loop
+  const assignedCountMap = useMemo(() => {
+    const map = new Map();
+    chapters.forEach((ch) => {
+      const types = chapterQuestionTypes[ch] || [];
+      types.forEach((t) => {
+        if (t?.id) map.set(t.id, (map.get(t.id) || 0) + 1);
+      });
+    });
+    return map;
+  }, [chapters, chapterQuestionTypes]);
 
   // Selected count filtered by the active category (or total for 'All')
   const currentCategorySelectedCount = useMemo(() => {
@@ -465,18 +481,17 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
   );
 
   return (
-    /* Covers ONLY the main workspace area — Top NavBar (60px) & Left Sidebar (240px) remain crisp & unblurred */
+    /* Full-Page Workspace View — fills the entire content canvas without blur overlays or popup margins */
     <div
-      className="fixed top-[60px] left-0 md:left-[240px] right-0 bottom-0 z-40 bg-black/60 backdrop-blur-sm p-2.5 sm:p-4 lg:p-5 flex flex-col overflow-hidden"
-      role="dialog"
-      aria-modal="true"
+      className="fixed top-[60px] left-0 md:left-[240px] right-0 bottom-0 z-40 bg-[#FAF8F5] flex flex-col overflow-hidden animate-fade-in"
+      role="region"
       aria-label={isEditingExisting ? 'Edit Question Types' : 'Add Question Types from Master Data'}
     >
-      {/* Full-Area Modern Form Surface */}
-      <div className="w-full h-full bg-[#FAF8F5] rounded-3xl border border-white/60 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden animate-ios-reveal">
+      {/* Full-Area Dedicated Page Surface */}
+      <div className="w-full h-full bg-[#FAF8F5] flex flex-col overflow-hidden">
 
-        {/* ── COMPACT MODERN HEADER ── */}
-        <div className="px-4 sm:px-6 py-3 bg-white border-b border-[#E8E2D9] flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+        {/* ── FULL-PAGE HEADER BAR ── */}
+        <div className="px-5 sm:px-6 py-3 bg-white border-b border-[#E8E2D9] flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#8B1F3A] to-[#5C0C21] text-white flex items-center justify-center font-bold text-[11px] shadow-sm shrink-0">
               QT
@@ -526,7 +541,8 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
               onClick={onClose}
               style={{ outline: 'none' }}
               className="w-8 h-8 rounded-full bg-stone-100/80 hover:bg-stone-200/80 text-stone-500 hover:text-stone-800 flex items-center justify-center transition-colors cursor-pointer text-xs"
-              aria-label="Close form"
+              aria-label="Close page"
+              title="Close page"
             >
               ✕
             </button>
@@ -534,8 +550,8 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
         </div>
 
         {/* ── LOCKED-VIEWPORT OPTIMIZED SPLIT WORKSPACE ── */}
-        <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden p-3.5 sm:p-4 bg-gradient-to-br from-[#FAF8F5]/75 via-white/55 to-[#FAF0F3]/35">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 lg:h-full lg:min-h-0">
+        <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden p-4 sm:p-5 lg:p-6 bg-gradient-to-br from-[#FAF8F5]/75 via-white/55 to-[#FAF0F3]/35">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:h-full lg:min-h-0">
 
             {/* LEFT MAIN WORKSPACE (8 Cols): Compact Context + Chapter Strip + High-Density Catalogue */}
             <div className="lg:col-span-8 flex flex-col gap-3 lg:h-full lg:min-h-0">
@@ -861,9 +877,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                   <div className="flex-1 min-h-[240px] lg:min-h-0 overflow-y-auto custom-scrollbar pr-1">
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
                       {filteredMasterTypes.map((mType) => {
-                        const assignedCount = chapters.filter((ch) =>
-                          (chapterQuestionTypes[ch] || []).some((t) => t.id === mType.id)
-                        ).length;
+                        const assignedCount = assignedCountMap.get(mType.id) || 0;
                         const isAllAssigned = chapters.length > 0 && assignedCount === chapters.length;
                         const isPartiallyAssigned = assignedCount > 0 && assignedCount < chapters.length;
                         const isSelected = isAllChapters ? isAllAssigned : activeSelectedIds.has(mType.id);
@@ -874,7 +888,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                             type="button"
                             onClick={() => toggleMasterType(mType)}
                             style={{ outline: 'none' }}
-                            className={`text-left p-3 rounded-xl border transition-all duration-150 cursor-pointer flex flex-col justify-between gap-1.5 group ${
+                            className={`text-left p-3 rounded-xl border transition-all duration-150 cursor-pointer flex flex-col justify-between gap-1.5 group content-visibility-auto ${
                               isSelected
                                 ? 'bg-gradient-to-br from-[#FDF4F6] via-white to-[#FAF0F3]/70 border-[#72102A] ring-1 ring-[#72102A]/15 shadow-[0_4px_14px_-6px_rgba(114,16,42,0.2)]'
                                 : isPartiallyAssigned && isAllChapters

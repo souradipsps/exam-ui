@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 
 const getCategoryBadgeStyle = (category = '') => {
   const c = category.toLowerCase();
@@ -65,14 +65,21 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
 
   // View mode: 'chapter' (individual) or 'all' (all details together)
   const [viewMode, setViewMode] = useState('chapter');
-  const [activeChapter, setActiveChapter] = useState('');
+  const [activeChapter, setActiveChapter] = useState(() => {
+    const firstConfigured = chapters.find((ch) => (chapterMap[ch] || []).length > 0);
+    return firstConfigured || chapters[0] || '';
+  });
 
-  // Set initial selected chapter when modal opens
+  // Sync selected chapter only when switching to a different questionType (avoids redundant initial double-render)
+  const prevViewIdRef = useRef(questionType?.id);
   useEffect(() => {
     if (!isOpen) return;
-    const firstConfigured = chapters.find((ch) => (chapterMap[ch] || []).length > 0);
-    setActiveChapter(firstConfigured || chapters[0] || '');
-    setViewMode('chapter');
+    if (questionType?.id !== prevViewIdRef.current) {
+      prevViewIdRef.current = questionType?.id;
+      const firstConfigured = chapters.find((ch) => (chapterMap[ch] || []).length > 0);
+      setActiveChapter(firstConfigured || chapters[0] || '');
+      setViewMode('chapter');
+    }
   }, [isOpen, questionType, chapters, chapterMap]);
 
   // Keyboard escape handler
@@ -112,17 +119,17 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
   const activeChapterGrouped = groupTypesByCategory(activeChapterTypes);
 
   return (
+    /* Full-Page Workspace View — fills the content canvas without blur overlays or popup margins */
     <div
-      className="fixed top-[60px] left-0 md:left-[240px] right-0 bottom-0 z-40 bg-black/60 backdrop-blur-sm p-2.5 sm:p-4 lg:p-5 flex flex-col overflow-hidden"
-      role="dialog"
-      aria-modal="true"
+      className="fixed top-[60px] left-0 md:left-[240px] right-0 bottom-0 z-40 bg-[#FAF8F5] flex flex-col overflow-hidden animate-fade-in"
+      role="region"
       aria-label="View Question Types Set"
     >
-      {/* Full-Area Modern Form Surface — Matches Edit/Add Modal Dimensions */}
-      <div className="w-full h-full bg-[#FAF8F5] rounded-3xl border border-white/60 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden animate-ios-reveal">
+      {/* Full-Area Dedicated Page Surface */}
+      <div className="w-full h-full bg-[#FAF8F5] flex flex-col overflow-hidden">
         
-        {/* ── 1. CLEAN MODERN HEADER ── */}
-        <div className="px-4 sm:px-6 py-3 bg-white border-b border-[#E8E2D9] flex items-center justify-between gap-3 shrink-0">
+        {/* ── 1. CLEAN MODERN HEADER WITH METADATA BADGES ── */}
+        <div className="px-5 sm:px-6 py-3 bg-white border-b border-[#E8E2D9] flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#8B1F3A] to-[#5C0C21] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
               QT
@@ -167,47 +174,45 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            style={{ outline: 'none' }}
-            className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 hover:text-stone-800 flex items-center justify-center transition-colors cursor-pointer text-xs shrink-0"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* ── 2. SIMPLE CONTEXT STRIP ── */}
-        <div className="px-4 sm:px-6 py-2.5 bg-[#FAF8F5] border-b border-[#E8E2D9] flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs text-stone-600 shrink-0">
-          <div>
-            <span className="text-stone-400 mr-1.5">Chapters:</span>
-            <strong className="text-emerald-700">{configuredChaptersCount} of {chapters.length} Configured</strong>
-          </div>
-          <div>
-            <span className="text-stone-400 mr-1.5">Unique Types:</span>
-            <strong className="text-[#72102A]">{uniqueTypesCount} Allowed</strong>
-          </div>
-          {questionType.dueDate && (
-            <div>
-              <span className="text-stone-400 mr-1.5">Due Date:</span>
-              <strong className="text-stone-800">{questionType.dueDate}</strong>
+          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF9F7] border border-stone-200/90 text-stone-700 font-medium text-xs shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+              <span className="text-stone-400">Unique Types:</span>
+              <strong className="text-[#72102A]">{uniqueTypesCount} Allowed</strong>
             </div>
-          )}
+
+            {questionType.dueDate && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF9F7] border border-stone-200/90 text-stone-700 font-medium text-xs shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                <svg className="w-3.5 h-3.5 text-stone-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Due Date: <strong className="text-stone-900">{questionType.dueDate}</strong></span>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ outline: 'none' }}
+              className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 hover:text-stone-800 flex items-center justify-center transition-colors cursor-pointer text-xs shrink-0"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
-        {/* ── 3. WORKSPACE: INDIVIDUAL VS ALL TOGETHER ── */}
-        <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
+        {/* ── 2. WORKSPACE: INDEPENDENT DETACHED CURVED BOXES ── */}
+        <div className="flex-1 min-h-0 p-3.5 sm:p-4 lg:p-5 flex flex-col md:flex-row gap-3.5 lg:gap-4 overflow-hidden bg-gradient-to-br from-[#FAF8F5]/75 via-white/55 to-[#FAF0F3]/35">
           
-          {/* ── LEFT PANEL: CHAPTER NAVIGATOR (320px) ── */}
-          <div className="w-full md:w-80 lg:w-[320px] shrink-0 border-r border-[#E8E2D9] bg-white flex flex-col min-h-0">
+          {/* ── LEFT PANEL BOX: CHAPTER NAVIGATOR (Curved & Detached) ── */}
+          <div className="w-full md:w-80 lg:w-[320px] shrink-0 bg-white rounded-2xl border border-[#E8E2D9] shadow-xs flex flex-col min-h-0 overflow-hidden">
             
             {/* "All Details Together" Option at Top */}
-            <div className="p-2 border-b border-[#E8E2D9] bg-[#FDFBF7] shrink-0">
+            <div className="p-3 border-b border-[#E8E2D9] bg-[#FDFBF7] shrink-0">
               <button
                 type="button"
                 onClick={() => setViewMode('all')}
-                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between gap-2 cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs transition-all flex items-center justify-between gap-2 cursor-pointer ${
                   viewMode === 'all'
                     ? 'bg-[#72102A] text-white font-bold shadow-xs'
                     : 'text-stone-700 hover:bg-stone-100 border border-stone-200/90 bg-white'
@@ -232,14 +237,14 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
             </div>
 
             {/* Individual Chapters Section Header */}
-            <div className="px-4 py-2 border-b border-[#E8E2D9] bg-stone-50/70 shrink-0">
+            <div className="px-4 py-2.5 border-b border-[#E8E2D9] bg-stone-50/70 shrink-0">
               <span className="text-[11px] font-bold text-stone-600 uppercase tracking-wider">
                 Individual Chapters ({chapters.length})
               </span>
             </div>
 
             {/* Scrollable list of individual chapters */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-2.5 space-y-1.5">
               {chapters.map((ch, idx) => {
                 const chTypes = chapterMap[ch] || [];
                 const isSelected = viewMode === 'chapter' && ch === activeChapter;
@@ -283,11 +288,11 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
             </div>
           </div>
 
-          {/* ── RIGHT PANEL: MAIN DETAIL DECK ── */}
-          <div className="flex-1 min-w-0 flex flex-col min-h-0 bg-[#FAF8F5]/60">
+          {/* ── RIGHT PANEL BOX: MAIN DETAIL DECK (Curved & Detached) ── */}
+          <div className="flex-1 min-w-0 bg-white rounded-2xl border border-[#E8E2D9] shadow-xs flex flex-col min-h-0 overflow-hidden">
             
-            {/* Header bar with view-mode toggle */}
-            <div className="px-6 py-4 border-b border-[#E8E2D9] bg-white flex items-center justify-between gap-3 shrink-0">
+            {/* Header bar with view-mode toggle inside curved box */}
+            <div className="px-5 sm:px-6 py-3.5 border-b border-[#E8E2D9] bg-white flex items-center justify-between gap-3 shrink-0">
               <div className="min-w-0">
                 {viewMode === 'all' ? (
                   <>
@@ -417,15 +422,15 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
                                       {catTypes.map((t, tIdx) => (
                                         <div
                                           key={t.id || tIdx}
-                                          className="p-3.5 rounded-xl bg-[#FAF8F5]/80 border border-stone-200/90 shadow-2xs flex flex-col justify-between gap-2"
+                                          className="p-3 rounded-xl bg-[#FAF8F5]/80 border border-stone-200/90 shadow-2xs flex flex-col justify-between gap-1.5 content-visibility-auto"
                                         >
                                           <div>
                                             <div className="flex items-start justify-between gap-2">
-                                              <h5 className="font-bold text-stone-900 text-[13px] m-0 leading-tight">
+                                              <h5 className="font-bold text-stone-900 text-[14px] sm:text-[14.5px] m-0 leading-tight">
                                                 {t.name}
                                               </h5>
                                               <span
-                                                className={`px-2 py-0.5 rounded-full text-[9.5px] font-semibold border shrink-0 ${getCategoryBadgeStyle(
+                                                className={`px-1.5 py-0.5 rounded-md text-[8.5px] font-semibold border shrink-0 leading-none ${getCategoryBadgeStyle(
                                                   t.category
                                                 )}`}
                                               >
@@ -434,14 +439,14 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
                                             </div>
 
                                             {t.description && (
-                                              <p className="text-xs text-stone-600 mt-1.5 mb-0 leading-relaxed">
+                                              <p className="text-[12px] text-stone-600 mt-1 mb-0 leading-snug line-clamp-2">
                                                 {t.description}
                                               </p>
                                             )}
                                           </div>
 
                                           {t.id && (
-                                            <div className="pt-2 border-t border-stone-200/60 flex items-center justify-between text-[10px] text-stone-400">
+                                            <div className="pt-1.5 border-t border-stone-200/60 flex items-center justify-between text-[9.5px] text-stone-400">
                                               <span className="font-mono">{t.id}</span>
                                               <span className="text-emerald-700 font-medium">Included</span>
                                             </div>
@@ -539,15 +544,15 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
                             {catTypes.map((t, idx) => (
                               <div
                                 key={t.id || idx}
-                                className="p-4 rounded-2xl bg-white border border-[#E8E2D9] shadow-xs flex flex-col justify-between gap-2.5 hover:border-stone-300 transition-all"
+                                className="p-3.5 rounded-xl bg-white border border-[#E8E2D9] shadow-xs flex flex-col justify-between gap-2 hover:border-stone-300 transition-all content-visibility-auto"
                               >
                                 <div>
                                   <div className="flex items-start justify-between gap-2">
-                                    <h4 className="font-bold text-stone-900 text-sm m-0 leading-tight">
+                                    <h4 className="font-bold text-stone-900 text-[14.5px] sm:text-[15px] m-0 leading-tight">
                                       {t.name}
                                     </h4>
                                     <span
-                                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${getCategoryBadgeStyle(
+                                      className={`px-1.5 py-0.5 rounded-md text-[8.5px] font-semibold border shrink-0 leading-none ${getCategoryBadgeStyle(
                                         t.category
                                       )}`}
                                     >
@@ -556,14 +561,14 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
                                   </div>
 
                                   {t.description && (
-                                    <p className="text-xs text-stone-600 mt-2 mb-0 leading-relaxed">
+                                    <p className="text-[12.5px] text-stone-600 mt-1.5 mb-0 leading-snug line-clamp-2">
                                       {t.description}
                                     </p>
                                   )}
                                 </div>
 
                                 {t.id && (
-                                  <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[10px] text-stone-400">
+                                  <div className="pt-1.5 border-t border-stone-100 flex items-center justify-between text-[9.5px] text-stone-400">
                                     <span className="font-mono">{t.id}</span>
                                     <span className="text-emerald-700 font-medium">Active in Syllabus</span>
                                   </div>

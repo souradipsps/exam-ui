@@ -5,7 +5,7 @@ export default function QuestionViewModal({ isOpen, onClose, question, onEdit })
 
   return (
     <div
-      className="fixed top-[60px] left-0 md:left-[240px] right-0 bottom-0 z-40 bg-black/60 backdrop-blur-sm p-2.5 sm:p-4 lg:p-5 flex flex-col overflow-hidden"
+      className="fixed top-[60px] left-0 md:left-[var(--sidebar-w,240px)] transition-[left] duration-[250ms] ease-[cubic-bezier(0.4,0,0.2,1)] right-0 bottom-0 z-40 bg-black/60 backdrop-blur-sm p-2.5 sm:p-4 lg:p-5 flex flex-col overflow-hidden"
       role="dialog"
       aria-modal="true"
       aria-label="View Question Details"

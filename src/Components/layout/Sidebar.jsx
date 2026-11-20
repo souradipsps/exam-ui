@@ -1,8 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '../common/Icon.jsx';
 import { NAV_ITEMS } from '../../data/navigation.js';
 
+const STORAGE_KEY = 'sidebarCollapsed';
+
 export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handleNavKeyDown, isOpen, onClose }) {
+  const [collapsedPref, setCollapsedPref] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  // The mobile drawer is always shown expanded
+  const collapsed = collapsedPref && !isOpen;
+
+  // Publish the sidebar width so full-screen forms/modals can align to it
+  useEffect(() => {
+    document.documentElement.style.setProperty('--sidebar-w', collapsedPref ? '68px' : '240px');
+  }, [collapsedPref]);
+
+  const toggleCollapsed = () => {
+    setCollapsedPref((c) => {
+      try {
+        localStorage.setItem(STORAGE_KEY, c ? '0' : '1');
+      } catch {
+        /* ignore */
+      }
+      return !c;
+    });
+  };
+
   return (
     <>
       {/* Mobile backdrop overlay */}
@@ -17,7 +45,8 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
 
       <aside
         style={{
-          width: '240px',
+          width: collapsed ? '68px' : '240px',
+          overflow: 'hidden',
           background: 'linear-gradient(180deg, #6B0E25 0%, #4D0719 100%)',
           borderRight: '1px solid rgba(255, 255, 255, 0.08)',
           display: 'flex',
@@ -27,7 +56,7 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
           // Mobile: fixed drawer; Desktop: static
           position: undefined,
           zIndex: 50,
-          transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
+          transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1), width 0.25s cubic-bezier(0.4,0,0.2,1)',
         }}
         className={`
           fixed top-0 left-0 h-full z-50 md:static md:z-auto md:translate-x-0
@@ -83,13 +112,16 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
                     if (onClose) onClose(); // close drawer on mobile after nav
                   }}
                   onKeyDown={(e) => handleNavKeyDown && handleNavKeyDown(e, index)}
+                  title={collapsed ? item.label : undefined}
+                  aria-label={item.label}
                   className={`w-full flex items-center text-[13px] transition-all text-left relative overflow-hidden outline-none focus:outline-none ${
                     isActive
                       ? 'font-bold text-white'
                       : 'font-medium text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                   style={{
-                    padding: '10px 14px',
+                    padding: collapsed ? '10px 0' : '10px 14px',
+                    justifyContent: collapsed ? 'center' : 'flex-start',
                     borderRadius: '10px',
                     gap: '11px',
                     outline: 'none',
@@ -113,23 +145,57 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
                     className="w-4 h-4 flex-shrink-0"
                     style={{ color: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.85)' }}
                   />
-                  <span className="truncate">{item.label}</span>
+                  {!collapsed && <span className="truncate">{item.label}</span>}
                 </button>
               );
             })}
           </div>
         </nav>
 
+        {/* Collapse / expand toggle (desktop only) */}
+        <div className="hidden md:block" style={{ padding: '0 10px 10px' }}>
+          <button
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!collapsed}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="w-full flex items-center text-[12px] font-semibold text-white transition-colors hover:bg-white/20"
+            style={{
+              gap: '8px',
+              padding: '9px 0',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              paddingLeft: collapsed ? 0 : '14px',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(201, 168, 76, 0.5)',
+            }}
+          >
+            <svg
+              className="w-5 h-5 flex-shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#D4B24C"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }}
+            >
+              <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" />
+            </svg>
+            {!collapsed && <span>Collapse menu</span>}
+          </button>
+        </div>
+
         {/* User Footer */}
         <div
           className="mt-auto"
           style={{
-            padding: '14px 18px',
+            padding: collapsed ? '14px 0' : '14px 18px',
             borderTop: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center min-w-0 flex-1" style={{ gap: '10px' }}>
+          <div className="flex items-center justify-between" style={collapsed ? { justifyContent: 'center' } : undefined}>
+            <div className="flex items-center min-w-0 flex-1" style={{ gap: '10px', justifyContent: collapsed ? 'center' : 'flex-start' }}>
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 text-white shadow-sm"
                 style={{
@@ -139,14 +205,16 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
               >
                 LN
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-white text-[12px] font-bold leading-tight truncate">lam nin</div>
-                <div className="text-white/60 text-[10px] leading-tight mt-0.5 truncate">lamjingbasps@gma...</div>
-              </div>
+              {!collapsed && (
+                <div className="flex-1 min-w-0">
+                  <div className="text-white text-[12px] font-bold leading-tight truncate">lam nin</div>
+                  <div className="text-white/60 text-[10px] leading-tight mt-0.5 truncate">lamjingbasps@gma...</div>
+                </div>
+              )}
             </div>
 
             {/* Log Out button */}
-            <button
+            {!collapsed && <button
               className="px-2.5 py-1.5 rounded-[8px] text-[10px] font-bold text-white transition-all text-center leading-tight hover:bg-white/15 flex-shrink-0"
               style={{
                 backgroundColor: 'rgba(92, 12, 33, 0.6)',
@@ -156,7 +224,7 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
             >
               <div>Log</div>
               <div>Out</div>
-            </button>
+            </button>}
           </div>
         </div>
       </aside>

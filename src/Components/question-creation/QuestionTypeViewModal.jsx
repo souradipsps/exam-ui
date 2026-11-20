@@ -121,7 +121,7 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
   return (
     /* Full-Page Workspace View — fills the content canvas without blur overlays or popup margins */
     <div
-      className="fixed top-[60px] left-0 md:left-[240px] right-0 bottom-0 z-40 bg-[#FAF8F5] flex flex-col overflow-hidden animate-fade-in"
+      className="fixed top-[60px] left-0 md:left-[var(--sidebar-w,240px)] transition-[left] duration-[250ms] ease-[cubic-bezier(0.4,0,0.2,1)] right-0 bottom-0 z-40 bg-[#FAF8F5] flex flex-col overflow-hidden animate-fade-in"
       role="region"
       aria-label="View Question Types Set"
     >

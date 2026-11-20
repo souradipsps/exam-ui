@@ -1813,9 +1813,60 @@ export default function TeacherManagement() {
             <p className="text-sm font-semibold text-[#1A1A1A]">{value}</p>
           </div>
         );
+        const renderLogs = (title, list, edits, editLabel, assignedList) => (
+          <div>
+            <p className="text-xs font-semibold text-[#1A1A1A] mb-2">Assigned To This Educator</p>
+            {assignedList.length === 0 ? (
+              <p className="text-xs text-stone-400 bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-3 mb-4">Nothing assigned yet</p>
+            ) : (
+              <div className="space-y-2 mb-4">
+                {assignedList.map(asn => (
+                  <div key={asn.id} className="bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-2.5">
+                    <p className="text-sm font-semibold text-[#1A1A1A]">{asn.type === 'questionType' ? 'Question Type Assignment' : 'Question Assignment'} &bull; {asn.subject}</p>
+                    <p className="text-xs text-stone-600 mt-0.5">{asn.program}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs font-semibold text-[#1A1A1A] mb-2">{title}</p>
+            {list.length === 0 ? (
+              <p className="text-xs text-stone-400 bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-3">No recent activity</p>
+            ) : (
+              <div className="relative pl-6">
+                <span className="absolute left-[5px] top-3 bottom-3 w-px bg-stone-300" />
+                <div className="space-y-3">
+                  {list.map(log => {
+                    const edited = log.action.startsWith('Updated');
+                    return (
+                      <div key={log.id} className="relative">
+                        <span className={`absolute -left-6 top-4 w-2.5 h-2.5 rounded-full ${edited ? 'bg-[#0B5E8E]' : 'bg-[#0B8F5B]'}`} />
+                        <div className="bg-[#F8F9FB] border border-stone-200 rounded-xl px-4 py-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md border ${edited ? 'bg-[#DBEAFE] text-[#1D4ED8] border-[#BFDBFE]' : 'bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]'}`}>{edited ? 'Edited' : log.action.startsWith('Created') ? 'Created' : 'Assigned'}</span>
+                            <p className="text-xs text-stone-500 whitespace-nowrap">{log.timestamp}</p>
+                          </div>
+                          <p className="text-sm text-[#1A1A1A] mt-2">{log.action}</p>
+                          <p className="text-sm text-stone-700 mt-0.5">{log.details}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="relative">
+                    <span className="absolute -left-6 top-4 w-2.5 h-2.5 rounded-full bg-[#7E22CE]" />
+                    <div className="bg-[#F8F9FB] border border-stone-200 rounded-xl px-4 py-3">
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-md border bg-[#F3E8FF] text-[#7E22CE] border-[#E9D5FF]">Edits</span>
+                      <p className="text-sm font-semibold text-[#1A1A1A] mt-2">Edited {edits} {edits === 1 ? 'time' : 'times'}</p>
+                      <p className="text-sm text-stone-700 mt-0.5">{editLabel} edited {edits}.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setViewingTeacher(null)}>
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-start justify-between px-6 py-4 border-b border-stone-200">
                 <div className="flex items-center gap-3">
                   <img src={t.avatar} alt={t.name} className="w-11 h-11 rounded-xl object-cover ring-2 ring-[#72102A]/20" />
@@ -1834,38 +1885,9 @@ export default function TeacherManagement() {
                   {stat('Question Type Edits', typeEdits)}
                   {stat('Question Edits', questionEdits)}
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-[#1A1A1A] mb-2">Assigned To This Educator</p>
-                  {assigned.length === 0 ? (
-                    <p className="text-xs text-stone-400 bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-3">Nothing assigned yet</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {assigned.map(asn => (
-                        <div key={asn.id} className="bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-2.5">
-                          <p className="text-sm font-semibold text-[#1A1A1A]">{asn.type === 'questionType' ? 'Question Type Assignment' : 'Question Assignment'} &bull; {asn.subject}</p>
-                          <p className="text-xs text-stone-600 mt-0.5">{asn.program}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-[#1A1A1A] mb-2">Activity Logs</p>
-                  {logs.length === 0 ? (
-                    <p className="text-xs text-stone-400 bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-3">No recent activity</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {logs.map(log => (
-                        <div key={log.id} className="bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-2.5">
-                          <div className="flex items-start justify-between gap-3">
-                            <p className="text-sm font-semibold text-[#72102A]">{log.action}</p>
-                            <p className="text-[11px] text-stone-500 font-mono whitespace-nowrap">{log.timestamp}</p>
-                          </div>
-                          <p className="text-xs text-stone-600 mt-1">{log.details}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:divide-x md:divide-stone-200">
+                {renderLogs('Activity Logs - Question Type Assignment', logs.filter(log => log.action.includes('Question Type')), typeEdits, 'Question Type', assigned.filter(asn => asn.type === 'questionType'))}
+                <div className="md:pl-6">{renderLogs('Activity Logs - Question Data', logs.filter(log => !log.action.includes('Question Type')), questionEdits, 'Question', assigned.filter(asn => asn.type !== 'questionType'))}</div>
                 </div>
               </div>
             </div>

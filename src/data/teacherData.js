@@ -449,5 +449,14 @@ export const INITIAL_ACTIVITY_LOGS = [
     action: "Assigned Question Type Assignment (Quantum Mechanics)",
     details: "Program: B.Sc Physics | Course: Quantum Mechanics (PH-301) | Quantum Physics Lab evaluation assignment.",
     timestamp: "1.5 hours ago"
+  },
+  {
+    id: "LOG-5004",
+    teacherName: "Dr. Evelyn Vance",
+    teacherAvatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+    department: "Computer Science",
+    action: "Assigned 2 Questions from Question Bank",
+    details: "Assigned specific questions Q-101, Q-102 to evaluate for Data Structures & Algorithms (CS-201).",
+    timestamp: "25 minutes ago"
   }
 ];

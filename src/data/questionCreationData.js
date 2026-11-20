@@ -15,7 +15,46 @@ export const COGNITIVE_LEVELS = [
 export const DIFFICULTY_LEVELS = [
   { id: 'Easy', name: 'Easy', color: 'emerald', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
   { id: 'Medium', name: 'Medium', color: 'amber', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
-  { id: 'Hard', name: 'Hard', color: 'rose', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' }
+  { id: 'Hard', name: 'Hard', color: 'rose', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
+  { id: 'Very Hard', name: 'Very Hard', color: 'purple', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' }
+];
+
+export const RESPONSE_FORMATS = [
+  { id: 'MCQ_SINGLE', name: 'Multiple Choice (MCQ)', group: 'Selected Response', defaultMarks: 1 },
+  { id: 'MCQ_MULTIPLE', name: 'Multiple-select MCQ (MSQ)', group: 'Selected Response', defaultMarks: 2 },
+  { id: 'TRUE_FALSE', name: 'True / False', group: 'Selected Response', defaultMarks: 1 },
+  { id: 'YES_NO', name: 'Yes / No', group: 'Selected Response', defaultMarks: 1 },
+  { id: 'ASSERTION_REASON', name: 'Assertion–Reason', group: 'Selected Response', defaultMarks: 2 },
+  { id: 'MATCHING', name: 'Match the Following', group: 'Selected Response', defaultMarks: 4 },
+  { id: 'SEQUENCE_ORDER', name: 'Sequence / Ordering', group: 'Selected Response', defaultMarks: 3 },
+  { id: 'FILL_BLANK', name: 'Fill in the Blank', group: 'Short Response', defaultMarks: 1 },
+  { id: 'VERY_SHORT_ANSWER', name: 'Very Short Answer (VSA)', group: 'Short Response', defaultMarks: 1 },
+  { id: 'SHORT_ANSWER', name: 'Short Answer (SA)', group: 'Short Response', defaultMarks: 3 },
+  { id: 'NUMERICAL', name: 'Numerical Answer', group: 'Short Response', defaultMarks: 3 },
+  { id: 'LONG_ANSWER', name: 'Long Essay / Problem', group: 'Extended Response', defaultMarks: 5 },
+  { id: 'ESSAY', name: 'Essay Type', group: 'Extended Response', defaultMarks: 8 },
+  { id: 'DERIVATION', name: 'Derivation / Proof', group: 'Extended Response', defaultMarks: 6 },
+  { id: 'CASE_STUDY', name: 'Case Study / Passage Based', group: 'Stimulus-Based', defaultMarks: 4 },
+  { id: 'CODE', name: 'Code Writing / Programming', group: 'Computational', defaultMarks: 10 },
+  { id: 'SQL', name: 'SQL Database Query', group: 'Computational', defaultMarks: 5 }
+];
+
+export const STIMULUS_TYPES = [
+  'None',
+  'Passage / Text',
+  'Case Study',
+  'Image / Diagram',
+  'Data / Table',
+  'Graph / Chart',
+  'Map'
+];
+
+export const ASSESSMENT_MODES = [
+  'Written',
+  'Digital / Online',
+  'Practical / Lab',
+  'Project / Portfolio',
+  'Oral / Viva'
 ];
 
 export const ACADEMIC_PROGRAMS = [
@@ -2566,6 +2605,132 @@ export const INITIAL_SUBMITTED_QUESTIONS = [
     status: "Draft",
     createdAt: "35 minutes ago",
     assignedTeacher: "Dr. Evelyn Vance"
+  },
+  {
+    id: "QCR-4007",
+    code: "BIO-MSQ-01",
+    program: "Class 10",
+    subject: "Biology",
+    exam: "Annual / Final Board Examination",
+    session: "2026-27",
+    chapter: "Life Processes",
+    type: "Multiple-select MCQ (MSQ)",
+    responseType: "MCQ_MULTIPLE",
+    stimulusType: "None",
+    difficulty: "Medium",
+    cognitiveLevel: "Analyze",
+    assessmentMode: "Written",
+    marks: 2,
+    negativeMarks: 0.5,
+    questionText: "Which of the following events occur during the light-dependent reaction of photosynthesis? (Select all that apply)",
+    options: [
+      { id: "A", text: "Absorption of light energy by chlorophyll", isCorrect: true },
+      { id: "B", text: "Reduction of carbon dioxide to carbohydrates", isCorrect: false },
+      { id: "C", text: "Splitting of water molecules into hydrogen and oxygen (Photolysis)", isCorrect: true },
+      { id: "D", text: "Conversion of chemical energy into light energy", isCorrect: false }
+    ],
+    correctAnswer: "Options A and C",
+    solution: "During light reactions, chlorophyll absorbs photon energy and water molecules split into hydrogen and oxygen (photolysis). Reduction of CO2 happens in the dark/light-independent Calvin cycle.",
+    blueprintSection: "Section A (Objective & MSQ)",
+    author: "Dr. Evelyn Vance",
+    status: "Approved",
+    createdAt: "3 hours ago",
+    assignedTeacher: "Dr. Evelyn Vance"
+  },
+  {
+    id: "QCR-4008",
+    code: "CHEM-AR-01",
+    program: "Class 10",
+    subject: "Chemistry",
+    exam: "Annual / Final Board Examination",
+    session: "2026-27",
+    chapter: "Chemical Reactions and Equations",
+    type: "Assertion–Reason",
+    responseType: "ASSERTION_REASON",
+    stimulusType: "None",
+    difficulty: "Medium",
+    cognitiveLevel: "Evaluate",
+    assessmentMode: "Written",
+    marks: 2,
+    negativeMarks: 0.25,
+    questionText: "Evaluate the given assertion and reasoning regarding redox reactions:",
+    assertionText: "Corrosion of iron is an electrochemical phenomenon and considered a redox reaction.",
+    reasonText: "During rusting, iron is oxidized to Fe²⁺ at the anodic region and oxygen is reduced to water at the cathodic region.",
+    arKey: "A",
+    options: [
+      { id: "A", text: "Both Assertion (A) and Reason (R) are true, and (R) is the correct explanation of (A).", isCorrect: true },
+      { id: "B", text: "Both Assertion (A) and Reason (R) are true, but (R) is NOT the correct explanation of (A).", isCorrect: false },
+      { id: "C", text: "Assertion (A) is true, but Reason (R) is false.", isCorrect: false },
+      { id: "D", text: "Assertion (A) is false, but Reason (R) is true.", isCorrect: false }
+    ],
+    correctAnswer: "Option A: Both (A) and (R) are true, and (R) is the correct explanation of (A).",
+    solution: "Rusting of iron involves simultaneous oxidation of iron atoms to Fe²⁺ (loss of electrons) and reduction of atmospheric oxygen in moisture (gain of electrons). Thus it is a classic redox process.",
+    blueprintSection: "Section A (Objective & MSQ)",
+    author: "Prof. Marcus Thorne",
+    status: "Approved",
+    createdAt: "5 hours ago",
+    assignedTeacher: "Prof. Marcus Thorne"
+  },
+  {
+    id: "QCR-4009",
+    code: "PHY-NUM-01",
+    program: "Class 10",
+    subject: "Physics",
+    exam: "Annual / Final Board Examination",
+    session: "2026-27",
+    chapter: "Light - Reflection and Refraction",
+    type: "Numerical Answer",
+    responseType: "NUMERICAL",
+    stimulusType: "None",
+    difficulty: "Hard",
+    cognitiveLevel: "Apply",
+    assessmentMode: "Written",
+    marks: 3,
+    negativeMarks: 0,
+    numericValue: 15,
+    numericTolerance: 0.5,
+    numericUnit: "cm",
+    questionText: "An object is placed at a distance of 30 cm in front of a concave mirror of focal length 20 cm. At what distance (in cm) from the mirror should a screen be placed to obtain a sharp focused image? (Enter the absolute numeric value in cm).",
+    options: [],
+    correctAnswer: "15 cm (Image distance v = -60 cm; screen distance from mirror is 60 cm)",
+    solution: "Mirror Formula: 1/f = 1/v + 1/u. With Cartesian sign convention: u = -30 cm, f = -20 cm. 1/v = 1/(-20) - 1/(-30) = -1/20 + 1/30 = -1/60 => v = -60 cm. The screen must be placed 60 cm in front of the mirror.",
+    blueprintSection: "Section C (Numerical Problems)",
+    author: "Dr. Sarah Lin",
+    status: "Submitted",
+    createdAt: "1 day ago",
+    assignedTeacher: "Dr. Sarah Lin"
+  },
+  {
+    id: "QCR-4010",
+    code: "MATH-MATCH-01",
+    program: "Class 10",
+    subject: "Mathematics",
+    exam: "Annual / Final Board Examination",
+    session: "2026-27",
+    chapter: "Trigonometric Functions",
+    type: "Match the Following",
+    responseType: "MATCHING",
+    stimulusType: "None",
+    difficulty: "Medium",
+    cognitiveLevel: "Understand",
+    assessmentMode: "Written",
+    marks: 4,
+    negativeMarks: 1,
+    questionText: "Match the standard trigonometric values in Column I with their corresponding expressions in Column II:",
+    matchingPairs: [
+      { id: 1, left: "sin(30°)", right: "1/2" },
+      { id: 2, left: "cos(45°)", right: "1/√2" },
+      { id: 3, left: "tan(60°)", right: "√3" },
+      { id: 4, left: "sec(60°)", right: "2" }
+    ],
+    options: [],
+    correctAnswer: "1 -> 1/2, 2 -> 1/√2, 3 -> √3, 4 -> 2",
+    solution: "Direct evaluation from trigonometric unit ratios: sin(30°) = 0.5, cos(45°) = 1/√2, tan(60°) = √3, sec(60°) = 1/cos(60°) = 2.",
+    blueprintSection: "Section B (Matching & Comprehension)",
+    author: "Prof. Alan Turing",
+    status: "Approved",
+    createdAt: "1 day ago",
+    assignedTeacher: "Prof. Alan Turing"
   }
 ];
 

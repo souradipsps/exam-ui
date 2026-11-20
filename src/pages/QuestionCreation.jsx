@@ -1278,12 +1278,6 @@ export default function QuestionCreation({ showToast }) {
                           <td className="px-4 py-3 whitespace-nowrap">
                             {set.questionTypes && set.questionTypes.length > 0 ? (
                               <div className="flex items-center gap-1.5 flex-nowrap">
-                                {isDraft && (
-                                  <span className="bg-stone-100 text-stone-700 border border-stone-300 font-bold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1 shrink-0 whitespace-nowrap">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
-                                    Draft
-                                  </span>
-                                )}
                                 {set.questionTypes.slice(0, 2).map((t, idx) => {
                                   const typeName = typeof t === 'string' ? t : t.name;
                                   const badgeClass = getQuestionTypeBadgeStyle(typeName);
@@ -1348,25 +1342,16 @@ export default function QuestionCreation({ showToast }) {
                             {isDraft ? (
                               <div className="flex items-center justify-center gap-1.5 w-[140px] mx-auto">
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     setEditingType(set);
                                     setIsTypeModalOpen(true);
                                   }}
-                                  className="flex-1 inline-flex items-center justify-center h-7 px-2 rounded-lg text-stone-700 border border-stone-300 bg-stone-100 hover:bg-stone-200 hover:border-stone-400 hover:shadow-xs transition-all duration-150 text-[11px] font-semibold cursor-pointer"
+                                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-7 px-2.5 rounded-lg border border-amber-300 bg-amber-50/50 hover:bg-amber-100 hover:border-amber-400 text-stone-700 hover:text-stone-900 transition-all duration-150 cursor-pointer shadow-2xs hover:shadow-sm hover:scale-105 active:scale-95 text-xs font-semibold"
                                   title="Resume Draft"
                                 >
                                   Draft
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingType(set);
-                                    setIsTypeModalOpen(true);
-                                  }}
-                                  className="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-lg text-amber-700 border border-amber-200 bg-amber-50/40 hover:bg-amber-100 hover:border-amber-300 hover:text-amber-800 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
-                                  title="Edit Draft"
-                                  aria-label="Edit Draft"
-                                >
-                                  <Icon name="edit" className="w-3.5 h-3.5" />
+                                  <Icon name="edit" className="w-4 h-4 text-stone-500 shrink-0" />
                                 </button>
                                 <button
                                   onClick={() => setDeleteTarget({ type: 'type', item: set })}
@@ -1374,17 +1359,17 @@ export default function QuestionCreation({ showToast }) {
                                   title="Delete Draft"
                                   aria-label="Delete Draft"
                                 >
-                                  <Icon name="trash" className="w-3.5 h-3.5" />
+                                  <Icon name="trash" className="w-4 h-4" />
                                 </button>
                               </div>
                             ) : set.questionTypes && set.questionTypes.length > 0 ? (
                               <div className="flex items-center justify-center gap-1.5 w-[140px] mx-auto">
                                 <button
                                   onClick={() => setViewingType(set)}
-                                  className="flex-1 inline-flex items-center justify-center gap-1 h-7 px-2 rounded-lg text-[#72102a] border border-[#72102a]/30 bg-[#72102a]/5 hover:bg-[#72102a]/15 hover:border-[#72102a]/50 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 text-[11px] font-semibold cursor-pointer"
+                                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-7 px-2.5 rounded-lg text-[#72102a] border border-[#72102a]/30 bg-[#72102a]/5 hover:bg-[#72102a]/15 hover:border-[#72102a]/50 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 text-xs font-semibold cursor-pointer"
                                   title="View Details"
                                 >
-                                  <Icon name="eye" className="w-3.5 h-3.5 shrink-0" />
+                                  <Icon name="eye" className="w-4 h-4 shrink-0" />
                                   View
                                 </button>
                                 <button
@@ -1396,7 +1381,7 @@ export default function QuestionCreation({ showToast }) {
                                   title="Edit Question Types"
                                   aria-label="Edit Question Types"
                                 >
-                                  <Icon name="edit" className="w-3.5 h-3.5" />
+                                  <Icon name="edit" className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => setDeleteTarget({ type: 'type', item: set })}
@@ -1404,7 +1389,7 @@ export default function QuestionCreation({ showToast }) {
                                   title="Delete Question Types"
                                   aria-label="Delete Question Types"
                                 >
-                                  <Icon name="trash" className="w-3.5 h-3.5" />
+                                  <Icon name="trash" className="w-4 h-4" />
                                 </button>
                               </div>
                             ) : (
@@ -1448,8 +1433,8 @@ export default function QuestionCreation({ showToast }) {
               className="w-9 h-[36px] rounded-full bg-[#FAF0F3] text-[#72102A] border border-[#F2D7DF] flex items-center justify-center shrink-0"
               title="Filters"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
               </svg>
             </div>
 
@@ -1545,7 +1530,7 @@ export default function QuestionCreation({ showToast }) {
                   setFilterDifficulty('All');
                 }}
                 style={{ outline: 'none' }}
-                className="h-[36px] px-4 rounded-full bg-[#FAF0F3] hover:bg-[#F5E6EA] text-[#72102A] border border-[#F2D7DF] hover:border-[#E6C4CD] text-xs font-semibold transition-all whitespace-nowrap shrink-0 inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                className="ml-auto h-[36px] px-4 rounded-full bg-[#FAF0F3] hover:bg-[#F5E6EA] text-[#72102A] border border-[#F2D7DF] hover:border-[#E6C4CD] text-xs font-semibold transition-all whitespace-nowrap shrink-0 inline-flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -1553,19 +1538,6 @@ export default function QuestionCreation({ showToast }) {
                 <span>Clear</span>
               </button>
             )}
-
-            <button
-              type="button"
-              onClick={() => {
-                setEditingQuestion(null);
-                setIsQuestionModalOpen(true);
-              }}
-              style={{ outline: 'none' }}
-              className="lg:ml-auto h-[36px] px-4 rounded-full bg-gradient-to-r from-[#72102A] to-[#54081C] hover:from-[#851633] hover:to-[#680C25] text-white text-xs font-bold transition-all shadow-sm active:scale-95 flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              <span className="text-[#E5C158] font-black text-sm leading-none">+</span>
-              New Question
-            </button>
           </div>
 
           {/* QUESTIONS TABLE (Matching Question Bank Table UI) */}
@@ -1634,35 +1606,60 @@ export default function QuestionCreation({ showToast }) {
                           </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => setViewingQuestion(q)}
-                              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-[#72102a] border border-[#72102a]/30 bg-[#72102a]/5 hover:bg-[#72102a]/15 hover:border-[#72102a]/50 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 text-[11px] font-semibold cursor-pointer"
-                              title="View Question Details"
-                            >
-                              <Icon name="eye" className="w-3.5 h-3.5" />
-                              View
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingQuestion(q);
-                                setIsQuestionModalOpen(true);
-                              }}
-                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-amber-700 border border-amber-200 bg-amber-50/40 hover:bg-amber-100 hover:border-amber-300 hover:text-amber-800 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
-                              title="Edit Question"
-                              aria-label="Edit Question"
-                            >
-                              <Icon name="edit" className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteTarget({ type: 'question', item: q })}
-                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-600 border border-red-200 bg-red-50/40 hover:bg-red-100 hover:border-red-300 hover:text-red-700 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
-                              title="Delete Question"
-                              aria-label="Delete Question"
-                            >
-                              <Icon name="trash" className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                          {q.status === 'Draft' ? (
+                            <div className="flex items-center justify-center gap-1.5 w-[140px] mx-auto">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingQuestion(q);
+                                  setIsQuestionModalOpen(true);
+                                }}
+                                className="flex-1 inline-flex items-center justify-center gap-1.5 h-7 px-2.5 rounded-lg border border-amber-300 bg-amber-50/50 hover:bg-amber-100 hover:border-amber-400 text-stone-700 hover:text-stone-900 transition-all duration-150 cursor-pointer shadow-2xs hover:shadow-sm hover:scale-105 active:scale-95 text-xs font-semibold"
+                                title="Resume Draft Question"
+                              >
+                                Draft
+                                <Icon name="edit" className="w-4 h-4 text-stone-500 shrink-0" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteTarget({ type: 'question', item: q })}
+                                className="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-lg text-red-600 border border-red-200 bg-red-50/40 hover:bg-red-100 hover:border-red-300 hover:text-red-700 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
+                                title="Delete Question"
+                                aria-label="Delete Question"
+                              >
+                                <Icon name="trash" className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center gap-1.5 w-[140px] mx-auto">
+                              <button
+                                onClick={() => setViewingQuestion(q)}
+                                className="flex-1 inline-flex items-center justify-center gap-1.5 h-7 px-2.5 rounded-lg text-[#72102a] border border-[#72102a]/30 bg-[#72102a]/5 hover:bg-[#72102a]/15 hover:border-[#72102a]/50 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 text-xs font-semibold cursor-pointer"
+                                title="View Question Details"
+                              >
+                                <Icon name="eye" className="w-4 h-4 shrink-0" />
+                                View
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingQuestion(q);
+                                  setIsQuestionModalOpen(true);
+                                }}
+                                className="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-lg text-amber-700 border border-amber-200 bg-amber-50/40 hover:bg-amber-100 hover:border-amber-300 hover:text-amber-800 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
+                                title="Edit Question"
+                                aria-label="Edit Question"
+                              >
+                                <Icon name="edit" className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteTarget({ type: 'question', item: q })}
+                                className="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-lg text-red-600 border border-red-200 bg-red-50/40 hover:bg-red-100 hover:border-red-300 hover:text-red-700 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
+                                title="Delete Question"
+                                aria-label="Delete Question"
+                              >
+                                <Icon name="trash" className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}

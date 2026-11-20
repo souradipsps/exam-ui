@@ -20,11 +20,21 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
     document.documentElement.style.setProperty('--sidebar-w', collapsedPref ? '68px' : '240px');
   }, [collapsedPref]);
 
+  // Instant dark tooltip (shown only when collapsed). Rendered outside <aside> so it isn't clipped.
+  const [tip, setTip] = useState(null);
+  const showTip = (e, label) => {
+    if (!collapsed) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    setTip({ label, top: r.top + r.height / 2, left: r.right + 10 });
+  };
+  const hideTip = () => setTip(null);
+
   // True while the width animation runs (avoids ellipsis flicker on labels)
   const [animating, setAnimating] = useState(false);
 
   const toggleCollapsed = () => {
     setAnimating(true);
+    setTip(null);
     setTimeout(() => setAnimating(false), 280);
     setCollapsedPref((c) => {
       try {
@@ -117,7 +127,10 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
                     if (onClose) onClose(); // close drawer on mobile after nav
                   }}
                   onKeyDown={(e) => handleNavKeyDown && handleNavKeyDown(e, index)}
-                  title={collapsed ? item.label : undefined}
+                  onMouseEnter={(e) => showTip(e, item.label)}
+                  onMouseLeave={hideTip}
+                  onFocus={(e) => showTip(e, item.label)}
+                  onBlur={hideTip}
                   aria-label={item.label}
                   className={`w-full flex items-center text-[13px] transition-all text-left relative overflow-hidden outline-none focus:outline-none ${
                     isActive
@@ -172,7 +185,8 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
             onClick={toggleCollapsed}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-expanded={!collapsed}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            onMouseEnter={(e) => showTip(e, 'Expand sidebar')}
+            onMouseLeave={hideTip}
             className="w-full flex items-center text-[12px] font-semibold text-white transition-colors hover:bg-white/20"
             style={{
               gap: '8px',
@@ -251,6 +265,39 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
           </div>
         </div>
       </aside>
+
+      {collapsed && tip && (
+        <div
+          role="tooltip"
+          className="hidden md:block fixed pointer-events-none whitespace-nowrap"
+          style={{
+            top: tip.top,
+            left: tip.left,
+            transform: 'translateY(-50%)',
+            zIndex: 10000,
+            background: '#111',
+            color: '#fff',
+            fontSize: '12px',
+            fontWeight: 600,
+            padding: '7px 12px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
+          }}
+        >
+          <span
+            style={{
+              position: 'absolute',
+              left: '-4px',
+              top: '50%',
+              width: '8px',
+              height: '8px',
+              background: '#111',
+              transform: 'translateY(-50%) rotate(45deg)',
+            }}
+          />
+          {tip.label}
+        </div>
+      )}
     </>
   );
 }

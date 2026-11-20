@@ -1558,70 +1558,77 @@ export default function QuestionCreation({ showToast }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredQuestions.map((q) => (
-                      <tr
-                        key={q.id}
-                        className="hover:bg-[#fdf5f6] transition-colors cursor-pointer"
-                        onClick={() => setViewingQuestion(q)}
-                        title="Click to view question details"
-                      >
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="font-mono font-bold text-gray-700">{q.code || q.id}</span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-700">
-                          {q.program}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-800">
-                          {q.subject}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 max-w-[160px]">
-                          <span className="line-clamp-2" title={q.chapter}>{q.chapter}</span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-600">
-                          {q.type}
-                        </td>
-                        <td className="px-4 py-3 min-w-[200px] max-w-xs">
-                          <p className="text-gray-700 line-clamp-2">{q.questionText}</p>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-700 font-medium">
-                          {q.marks}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`px-2 py-0.5 rounded font-semibold text-[10.5px] border ${
-                            q.difficulty === 'Easy'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : q.difficulty === 'Medium'
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : 'bg-rose-50 text-rose-700 border-rose-200'
-                          }`}>
-                            {q.difficulty}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                          {q.status === 'Draft' ? (
-                            <div className="flex items-center justify-center gap-1.5 w-[140px] mx-auto">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingQuestion(q);
-                                  setIsQuestionModalOpen(true);
-                                }}
-                                className="flex-1 inline-flex items-center justify-center gap-1.5 h-7 px-2.5 rounded-lg border border-amber-300 bg-amber-50/50 hover:bg-amber-100 hover:border-amber-400 text-stone-700 hover:text-stone-900 transition-all duration-150 cursor-pointer shadow-2xs hover:shadow-sm hover:scale-105 active:scale-95 text-xs font-semibold"
-                                title="Resume Draft Question"
-                              >
-                                Draft
-                                <Icon name="edit" className="w-4 h-4 text-stone-500 shrink-0" />
-                              </button>
-                              <button
-                                onClick={() => setDeleteTarget({ type: 'question', item: q })}
-                                className="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-lg text-red-600 border border-red-200 bg-red-50/40 hover:bg-red-100 hover:border-red-300 hover:text-red-700 hover:shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
-                                title="Delete Question"
-                                aria-label="Delete Question"
-                              >
-                                <Icon name="trash" className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ) : (
+                    {filteredQuestions.map((q) => {
+                      const isDraft = q.status === 'Draft';
+                      return (
+                        <tr
+                          key={q.id}
+                          className={`transition-colors cursor-pointer ${
+                            isDraft ? 'bg-[#FFFDF7] hover:bg-[#FEF9EE]' : 'hover:bg-[#fdf5f6]'
+                          }`}
+                          style={isDraft ? { boxShadow: 'inset 3px 0 0 #F59E0B' } : undefined}
+                          onClick={() => {
+                            if (isDraft) {
+                              setEditingQuestion(q);
+                              setIsQuestionModalOpen(true);
+                            } else {
+                              setViewingQuestion(q);
+                            }
+                          }}
+                          title={isDraft ? 'Click to add question' : 'Click to view question details'}
+                        >
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="font-mono font-bold text-gray-700">{q.code || q.id}</span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-gray-700">
+                            {q.program}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-800">
+                            {q.subject}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 max-w-[160px]">
+                            <span className="line-clamp-2" title={q.chapter}>{q.chapter}</span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-gray-600">
+                            {q.type}
+                          </td>
+                          <td className="px-4 py-3 min-w-[200px] max-w-xs">
+                            <p className="text-gray-700 line-clamp-2">{q.questionText}</p>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-gray-700 font-medium">
+                            {q.marks}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`px-2 py-0.5 rounded font-semibold text-[10.5px] border ${
+                              q.difficulty === 'Easy'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : q.difficulty === 'Medium'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : 'bg-rose-50 text-rose-700 border-rose-200'
+                            }`}>
+                              {q.difficulty}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            {isDraft ? (
+                              <div className="flex items-center justify-center">
+                                <div className="relative inline-block">
+                                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#F59E0B] border-2 border-white rounded-full shadow-xs z-10 animate-pulse" />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingQuestion(q);
+                                      setIsQuestionModalOpen(true);
+                                    }}
+                                    className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#72102A] to-[#54081C] hover:from-[#851633] hover:to-[#680C25] text-white text-[11px] font-bold transition-all shadow-xs hover:shadow active:scale-95 inline-flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+                                    title="Add Questions"
+                                  >
+                                    <span className="text-[#E5C158] font-black text-xs leading-none">+</span>
+                                    Add Questions
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
                             <div className="flex items-center justify-center gap-1.5 w-[140px] mx-auto">
                               <button
                                 onClick={() => setViewingQuestion(q)}
@@ -1654,8 +1661,9 @@ export default function QuestionCreation({ showToast }) {
                           )}
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
+                    );
+                  })}
+                </tbody>
                 </table>
               </div>
             )}

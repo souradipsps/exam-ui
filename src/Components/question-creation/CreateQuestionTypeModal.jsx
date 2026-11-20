@@ -694,12 +694,12 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                   </div>
                 </div>
 
-                {/* Search + Chapter Dropdown + Category Dropdown + Selected Filter Toolbar */}
-                <div className="flex flex-wrap items-center justify-start gap-2 shrink-0">
-                  {/* Search Input (Expanded slightly to display full placeholder and query) */}
-                  <div className="relative w-full sm:w-[185px] md:w-[195px] shrink-0">
+                {/* Search + Chapter Dropdown + Selected Filter Toolbar (Single-line fit with flex-nowrap) */}
+                <div className="flex flex-nowrap items-center justify-start gap-2 shrink-0 min-w-0 w-full">
+                  {/* Search Input (Fluid width) */}
+                  <div className="relative flex-1 min-w-[160px] max-w-[260px] shrink-0">
                     <svg
-                      className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                      className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -712,8 +712,8 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                       value={catalogSearch}
                       onChange={(e) => setCatalogSearch(e.target.value)}
                       placeholder="Search 190+ types..."
-                      style={{ height: '36px', fontSize: '12px', borderRadius: '9999px' }}
-                      className="w-full h-[36px] bg-[#FAF9F7] border border-stone-200/90 rounded-full pl-8 pr-6 text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:border-[#72102A] focus:bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+                      style={{ height: '38px', fontSize: '12px', borderRadius: '9999px' }}
+                      className="w-full h-[38px] bg-[#FAF9F7] border border-stone-200/90 rounded-full pl-9 pr-7 text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:border-[#72102A] focus:bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
                     />
                     {catalogSearch && (
                       <button
@@ -726,7 +726,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                     )}
                   </div>
 
-                  {/* Chapter Filter Dropdown (Calibrated width to show full chapter title and keep Reset Filter on same row) */}
+                  {/* Chapter Filter Dropdown (Fluid width, ample space for chapter names) */}
                   <CustomDropdown
                     value={activeChapter}
                     onChange={(val) => {
@@ -737,21 +737,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                     variant="default"
                     rounded="full"
                     placeholder="Select Chapter"
-                    className="w-full sm:w-[270px] md:w-[295px] lg:w-[310px] shrink-0"
-                  />
-
-                  {/* Category Filter Dropdown (Widened to display full category names without truncation) */}
-                  <CustomDropdown
-                    value={categoryFilter}
-                    onChange={(val) => {
-                      setCategoryFilter(val);
-                      setShowSelectedOnly(false);
-                    }}
-                    options={categoryOptions}
-                    variant={categoryFilter !== 'All' ? 'maroon' : 'default'}
-                    rounded="full"
-                    placeholder="All Categories"
-                    className="w-full sm:w-[205px] md:w-[220px] lg:w-[230px] shrink-0"
+                    className="flex-1 min-w-[220px] max-w-[360px] shrink-0"
                   />
 
                   {/* Selected Only Toggle (Enabled across all categories with category-specific count) */}
@@ -764,7 +750,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                         : `Show only selected question types (${currentCategorySelectedCount})`
                     }
                     style={{ outline: 'none' }}
-                    className={`h-[36px] px-3 rounded-full text-xs font-bold border transition-all shrink-0 cursor-pointer inline-flex items-center gap-1.5 ${
+                    className={`h-[38px] px-3.5 rounded-full text-xs font-bold border transition-all shrink-0 cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap ${
                       showSelectedOnly
                         ? 'bg-[#72102A] text-white border-[#72102A] shadow-xs'
                         : 'bg-[#FAF9F7] text-stone-700 border-stone-200/90 hover:border-[#72102A]/40 hover:text-[#72102A] hover:bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]'
@@ -780,7 +766,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                     </span>
                   </button>
 
-                  {/* Reset Filters (Right-Aligned with ml-auto) */}
+                  {/* Reset Filters (Right-Aligned with ml-auto on the same line) */}
                   {(catalogSearch || categoryFilter !== 'All' || showSelectedOnly) && (
                     <button
                       type="button"
@@ -790,7 +776,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                         setShowSelectedOnly(false);
                       }}
                       style={{ outline: 'none' }}
-                      className="ml-auto h-[36px] px-3 rounded-full bg-[#FAF0F3] hover:bg-[#F5E6EA] text-[#72102A] border border-[#F2D7DF] text-xs font-semibold transition-all inline-flex items-center gap-1.5 cursor-pointer shrink-0"
+                      className="ml-auto h-[38px] px-3 rounded-full bg-[#FAF0F3] hover:bg-[#F5E6EA] text-[#72102A] border border-[#F2D7DF] text-xs font-semibold transition-all inline-flex items-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap"
                       title="Reset search and filters"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
@@ -799,6 +785,52 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                       <span>Reset Filter</span>
                     </button>
                   )}
+                </div>
+
+                {/* Separate Category Chips Row (Fit all in screen, no side scroll) */}
+                <div className="flex flex-wrap items-center gap-1.5 py-0.5 shrink-0">
+                  {categories.map((cat) => {
+                    const isSelected = categoryFilter === cat;
+                    const count = categoryCounts[cat] || 0;
+                    const dotColor = cat === 'All' ? null : getCategoryDotColor(cat);
+                    const label = cat === 'All' ? 'All' : cat;
+
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          setCategoryFilter(cat);
+                          setShowSelectedOnly(false);
+                        }}
+                        style={{ outline: 'none' }}
+                        className={`h-[28px] px-2.5 rounded-full text-[11px] font-semibold border transition-all cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap select-none ${
+                          isSelected
+                            ? 'bg-[#72102A] text-white border-[#72102A] shadow-xs'
+                            : 'bg-[#FAF9F7] text-stone-700 border-stone-200/90 hover:border-[#72102A]/40 hover:text-[#72102A] hover:bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]'
+                        }`}
+                        title={`Filter by ${cat === 'All' ? 'All Categories' : cat} (${count} types)`}
+                      >
+                        {dotColor && (
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                              isSelected ? 'bg-amber-300' : dotColor
+                            }`}
+                          />
+                        )}
+                        <span>{label}</span>
+                        <span
+                          className={`text-[9.5px] px-1.5 py-0.2 rounded-full font-bold ${
+                            isSelected
+                              ? 'bg-white/20 text-white'
+                              : 'bg-stone-200/70 text-stone-600'
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* High-Density Scrollable Master Types Grid */}
@@ -842,7 +874,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                             type="button"
                             onClick={() => toggleMasterType(mType)}
                             style={{ outline: 'none' }}
-                            className={`text-left p-3 rounded-xl border transition-all duration-150 cursor-pointer flex flex-col justify-between gap-2 group ${
+                            className={`text-left p-3 rounded-xl border transition-all duration-150 cursor-pointer flex flex-col justify-between gap-1.5 group ${
                               isSelected
                                 ? 'bg-gradient-to-br from-[#FDF4F6] via-white to-[#FAF0F3]/70 border-[#72102A] ring-1 ring-[#72102A]/15 shadow-[0_4px_14px_-6px_rgba(114,16,42,0.2)]'
                                 : isPartiallyAssigned && isAllChapters
@@ -852,7 +884,7 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                           >
                             <div className="flex items-start justify-between gap-2">
                               <span
-                                className={`font-bold text-[12px] leading-snug transition-colors line-clamp-1 ${
+                                className={`font-bold text-[13.5px] leading-tight transition-colors line-clamp-1 ${
                                   isSelected
                                     ? 'text-[#72102A]'
                                     : isPartiallyAssigned && isAllChapters
@@ -884,13 +916,13 @@ export default function CreateQuestionTypeModal({ isOpen, onClose, onSave, editi
                               </span>
                             </div>
 
-                            <p className="text-[10.5px] text-stone-500 line-clamp-2 leading-relaxed m-0">
+                            <p className="text-[11.5px] text-stone-600 line-clamp-2 leading-snug m-0">
                               {mType.description}
                             </p>
 
                             <div className="flex items-center justify-between pt-0.5">
                               <span
-                                className={`px-2 py-0.5 rounded-full text-[9.5px] font-semibold border ${getCategoryBadgeStyle(
+                                className={`px-1.5 py-0.5 rounded-md text-[8.5px] font-semibold border ${getCategoryBadgeStyle(
                                   mType.category
                                 )}`}
                               >

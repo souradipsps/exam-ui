@@ -20,7 +20,12 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
     document.documentElement.style.setProperty('--sidebar-w', collapsedPref ? '68px' : '240px');
   }, [collapsedPref]);
 
+  // True while the width animation runs (avoids ellipsis flicker on labels)
+  const [animating, setAnimating] = useState(false);
+
   const toggleCollapsed = () => {
+    setAnimating(true);
+    setTimeout(() => setAnimating(false), 280);
     setCollapsedPref((c) => {
       try {
         localStorage.setItem(STORAGE_KEY, c ? '0' : '1');
@@ -88,7 +93,7 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
 
         {/* Nav Links */}
         <nav
-          className="flex-1 overflow-y-auto"
+          className="flex-1 overflow-y-auto overflow-x-hidden"
           style={{ padding: '12px 10px 12px 10px' }}
           role="tablist"
           aria-label="Sidebar Navigation"
@@ -120,8 +125,7 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
                       : 'font-medium text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                   style={{
-                    padding: collapsed ? '10px 0' : '10px 14px',
-                    justifyContent: collapsed ? 'center' : 'flex-start',
+                    padding: '10px 16px',
                     borderRadius: '10px',
                     gap: '11px',
                     outline: 'none',
@@ -145,7 +149,17 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
                     className="w-4 h-4 flex-shrink-0"
                     style={{ color: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.85)' }}
                   />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
+                  <span
+                    className="whitespace-nowrap"
+                    style={{
+                      opacity: collapsed ? 0 : 1,
+                      transition: 'opacity 0.2s ease',
+                      overflow: 'hidden',
+                      textOverflow: collapsed || animating ? 'clip' : 'ellipsis',
+                    }}
+                  >
+                    {item.label}
+                  </span>
                 </button>
               );
             })}
@@ -163,8 +177,7 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
             style={{
               gap: '8px',
               padding: '9px 0',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              paddingLeft: collapsed ? 0 : '14px',
+              paddingLeft: '14px',
               borderRadius: '10px',
               backgroundColor: 'rgba(255, 255, 255, 0.08)',
               border: '1px solid rgba(201, 168, 76, 0.5)',
@@ -182,7 +195,12 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
             >
               <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" />
             </svg>
-            {!collapsed && <span>Collapse menu</span>}
+            <span
+              className="whitespace-nowrap overflow-hidden"
+              style={{ opacity: collapsed ? 0 : 1, transition: 'opacity 0.2s ease' }}
+            >
+              Collapse menu
+            </span>
           </button>
         </div>
 
@@ -190,12 +208,13 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
         <div
           className="mt-auto"
           style={{
-            padding: collapsed ? '14px 0' : '14px 18px',
+            padding: '14px 18px',
             borderTop: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
-          <div className="flex items-center justify-between" style={collapsed ? { justifyContent: 'center' } : undefined}>
-            <div className="flex items-center min-w-0 flex-1" style={{ gap: '10px', justifyContent: collapsed ? 'center' : 'flex-start' }}>
+          {/* Fixed-width row: the aside clips it, so text slides behind the avatar instead of reflowing */}
+          <div className="flex items-center justify-between" style={{ width: '204px' }}>
+            <div className="flex items-center min-w-0 flex-1" style={{ gap: '10px' }}>
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 text-white shadow-sm"
                 style={{
@@ -205,26 +224,30 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
               >
                 LN
               </div>
-              {!collapsed && (
-                <div className="flex-1 min-w-0">
-                  <div className="text-white text-[12px] font-bold leading-tight truncate">lam nin</div>
-                  <div className="text-white/60 text-[10px] leading-tight mt-0.5 truncate">lamjingbasps@gma...</div>
-                </div>
-              )}
+              <div
+                className="flex-1 min-w-0"
+                style={{ opacity: collapsed ? 0 : 1, transition: 'opacity 0.2s ease' }}
+              >
+                <div className="text-white text-[12px] font-bold leading-tight truncate">lam nin</div>
+                <div className="text-white/60 text-[10px] leading-tight mt-0.5 truncate">lamjingbasps@gma...</div>
+              </div>
             </div>
 
             {/* Log Out button */}
-            {!collapsed && <button
-              className="px-2.5 py-1.5 rounded-[8px] text-[10px] font-bold text-white transition-all text-center leading-tight hover:bg-white/15 flex-shrink-0"
+            <button
+              className="px-2.5 py-1.5 rounded-[8px] text-[10px] font-bold text-white text-center leading-tight hover:bg-white/15 flex-shrink-0"
+              tabIndex={collapsed ? -1 : 0}
               style={{
                 backgroundColor: 'rgba(92, 12, 33, 0.6)',
                 border: '1px solid rgba(255, 255, 255, 0.2)',
+                opacity: collapsed ? 0 : 1,
+                transition: 'opacity 0.2s ease',
               }}
               title="Log Out"
             >
               <div>Log</div>
               <div>Out</div>
-            </button>}
+            </button>
           </div>
         </div>
       </aside>

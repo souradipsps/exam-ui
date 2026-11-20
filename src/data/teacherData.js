@@ -241,7 +241,7 @@ export const INITIAL_TEACHERS = [
     department: "Computer Science",
     avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
     subjects: ["Computer Science", "Programming in C"],
-    classes: ["Class 11", "Class 12"],
+    classes: ["Class 11", "BCA - Computer Applications"],
     sections: ["A", "B"]
   },
   {
@@ -281,7 +281,7 @@ export const INITIAL_TEACHERS = [
     department: "Physics",
     avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
     subjects: ["Physics", "Quantum Mechanics"],
-    classes: ["Class 11", "Class 12"],
+    classes: ["Class 11", "B.Sc - Physics & Applied Sciences"],
     sections: ["B", "D"]
   },
   {
@@ -291,7 +291,7 @@ export const INITIAL_TEACHERS = [
     department: "English Literature",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
     subjects: ["English", "Modern Poetry & Prose"],
-    classes: ["Class 8", "Class 9"],
+    classes: ["Class 9", "B.A. - English Literature"],
     sections: ["A", "C"]
   },
   {
@@ -301,7 +301,7 @@ export const INITIAL_TEACHERS = [
     department: "Chemistry",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
     subjects: ["Chemistry", "Advanced Organic Synthesis"],
-    classes: ["Class 10", "Class 12"],
+    classes: ["Class 12", "M.Sc - Organic Chemistry"],
     sections: ["A", "D"]
   },
   {
@@ -321,7 +321,7 @@ export const INITIAL_TEACHERS = [
     department: "Computer Science",
     avatar: "https://i.pravatar.cc/150?img=47",
     subjects: ["Database Management Systems", "Cybersecurity Fundamentals"],
-    classes: ["Class 11", "Class 12"],
+    classes: ["B.Tech - Computer Science Engineering", "B.Tech - Information Technology"],
     sections: ["A", "B"]
   },
   {
@@ -331,7 +331,7 @@ export const INITIAL_TEACHERS = [
     department: "Computer Science",
     avatar: "https://i.pravatar.cc/150?img=12",
     subjects: ["Web Technologies", "Cloud Computing"],
-    classes: ["Class 10", "Class 11"],
+    classes: ["B.Tech - Information Technology", "BCA - Computer Applications"],
     sections: ["C", "D"]
   },
   {
@@ -341,7 +341,7 @@ export const INITIAL_TEACHERS = [
     department: "Mathematics",
     avatar: "https://i.pravatar.cc/150?img=45",
     subjects: ["Mathematics", "Discrete Mathematics"],
-    classes: ["Class 8", "Class 11"],
+    classes: ["Class 8", "B.Sc - Mathematics & Computing"],
     sections: ["A", "C"]
   },
   {

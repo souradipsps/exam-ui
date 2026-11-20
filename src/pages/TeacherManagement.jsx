@@ -21,7 +21,7 @@ const ChaptersMultiSelect = ({ options, selected, onChange }) => {
   const detailsRef = React.useRef(null);
   // Close the list when the user clicks anywhere outside it
   useEffect(() => {
-    const handleOutside = (e) => {
+    const handleOutside = (e) => {  
       if (detailsRef.current && !detailsRef.current.contains(e.target)) detailsRef.current.open = false;
     };
     document.addEventListener('mousedown', handleOutside);
@@ -251,6 +251,7 @@ const toRomanClass = (cls) => {
 // ==========================================
 export default function TeacherManagement() {
   const [teachers] = useState(INITIAL_TEACHERS);
+  const [viewingTeacher, setViewingTeacher] = useState(null);
   const [assignments, setAssignments] = useState(INITIAL_ASSIGNMENTS);
   const [activityLogs, setActivityLogs] = useState(INITIAL_ACTIVITY_LOGS);
   const [selectedChapters, setSelectedChapters] = useState([]);
@@ -1685,7 +1686,7 @@ export default function TeacherManagement() {
             {/* Mobile card view */}
             <div className="md:hidden space-y-4">
               {filteredTeachers.map(teacher => (
-                <div key={teacher.id} className="bg-white border border-stone-300 rounded-2xl shadow-sm p-4 space-y-3">
+                <div key={teacher.id} onClick={() => setViewingTeacher(teacher)} className="bg-white border border-stone-300 rounded-2xl shadow-sm p-4 space-y-3 cursor-pointer">
                   <div className="flex items-center gap-3">
                     <img
                       src={teacher.avatar}
@@ -1738,14 +1739,14 @@ export default function TeacherManagement() {
                     <th className="border border-stone-300 px-4 py-3">Designation</th>
                     <th className="border border-stone-300 px-4 py-3">Department</th>
                     <th className="border border-stone-300 px-4 py-3">Assigned Subjects</th>
-                    <th className="border border-stone-300 px-4 py-3">Assigned Classes</th>
+                    <th className="border border-stone-300 px-4 py-3">Assigned Classes/Program</th>
                     <th className="border border-stone-300 px-4 py-3">Assigned Sections</th>
                     <th className="border border-stone-300 px-4 py-3">Activity Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredTeachers.map(teacher => (
-                    <tr key={teacher.id} className="hover:bg-[#FDF5F7] transition-colors">
+                    <tr key={teacher.id} onClick={() => setViewingTeacher(teacher)} className="hover:bg-[#FDF5F7] transition-colors cursor-pointer">
                       <td className="border border-stone-300 px-4 py-3">
                         <div className="flex items-center gap-3">
                           <img
@@ -1798,6 +1799,79 @@ export default function TeacherManagement() {
           )}
         </div>
       )}
+
+      {/* EDUCATOR DETAILS POPUP */}
+      {viewingTeacher && (() => {
+        const t = viewingTeacher;
+        const logs = activityLogs.filter(log => (log.teacherName || '').includes(t.name));
+        const assigned = assignments.filter(asn => (asn.teacherIds || []).includes(t.id));
+        const typeEdits = logs.filter(log => log.action.startsWith('Updated Question Type')).length;
+        const questionEdits = logs.filter(log => log.action.startsWith('Updated Question Assignment')).length;
+        const stat = (label, value) => (
+          <div className="bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-2">
+            <p className="text-[11px] text-stone-500">{label}</p>
+            <p className="text-sm font-semibold text-[#1A1A1A]">{value}</p>
+          </div>
+        );
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setViewingTeacher(null)}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start justify-between px-6 py-4 border-b border-stone-200">
+                <div className="flex items-center gap-3">
+                  <img src={t.avatar} alt={t.name} className="w-11 h-11 rounded-xl object-cover ring-2 ring-[#72102A]/20" />
+                  <div>
+                    <h3 className="text-base font-bold text-[#1A1A1A]">{t.name}</h3>
+                    <p className="text-xs text-stone-500">{t.id}</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setViewingTeacher(null)} className="text-stone-400 hover:text-stone-700 p-1">
+                  <Icon name="close" className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="px-6 py-4 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {stat('Assignments Received', assigned.length)}
+                  {stat('Question Type Edits', typeEdits)}
+                  {stat('Question Edits', questionEdits)}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-[#1A1A1A] mb-2">Assigned To This Educator</p>
+                  {assigned.length === 0 ? (
+                    <p className="text-xs text-stone-400 bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-3">Nothing assigned yet</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {assigned.map(asn => (
+                        <div key={asn.id} className="bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-2.5">
+                          <p className="text-sm font-semibold text-[#1A1A1A]">{asn.type === 'questionType' ? 'Question Type Assignment' : 'Question Assignment'} &bull; {asn.subject}</p>
+                          <p className="text-xs text-stone-600 mt-0.5">{asn.program}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-[#1A1A1A] mb-2">Activity Logs</p>
+                  {logs.length === 0 ? (
+                    <p className="text-xs text-stone-400 bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-3">No recent activity</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {logs.map(log => (
+                        <div key={log.id} className="bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-2.5">
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-sm font-semibold text-[#72102A]">{log.action}</p>
+                            <p className="text-[11px] text-stone-500 font-mono whitespace-nowrap">{log.timestamp}</p>
+                          </div>
+                          <p className="text-xs text-stone-600 mt-1">{log.details}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ========================================== */}
       {/* TAB 3: ACTIVITY LOGS */}

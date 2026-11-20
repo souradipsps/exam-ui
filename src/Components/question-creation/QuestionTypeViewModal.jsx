@@ -113,16 +113,16 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
 
   return (
     <div
-      className="fixed top-[60px] left-0 md:left-[240px] right-0 bottom-0 z-40 bg-black/60 backdrop-blur-sm p-2 sm:p-3 lg:p-4 flex items-center justify-center overflow-hidden"
+      className="fixed top-[60px] left-0 md:left-[240px] right-0 bottom-0 z-40 bg-black/60 backdrop-blur-sm p-2.5 sm:p-4 lg:p-5 flex flex-col overflow-hidden"
       role="dialog"
       aria-modal="true"
       aria-label="View Question Types Set"
     >
-      {/* EXPANDED LARGE MODAL CONTAINER */}
-      <div className="w-full h-full max-w-[1440px] bg-[#FAF8F5] rounded-3xl border border-stone-200 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden animate-ios-reveal">
+      {/* Full-Area Modern Form Surface — Matches Edit/Add Modal Dimensions */}
+      <div className="w-full h-full bg-[#FAF8F5] rounded-3xl border border-white/60 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden animate-ios-reveal">
         
         {/* ── 1. CLEAN MODERN HEADER ── */}
-        <div className="px-6 py-4 bg-white border-b border-[#E8E2D9] flex items-center justify-between gap-3 shrink-0">
+        <div className="px-4 sm:px-6 py-3 bg-white border-b border-[#E8E2D9] flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#8B1F3A] to-[#5C0C21] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
               QT
@@ -179,7 +179,7 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
         </div>
 
         {/* ── 2. SIMPLE CONTEXT STRIP ── */}
-        <div className="px-6 py-2.5 bg-[#FAF8F5] border-b border-[#E8E2D9] flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs text-stone-600 shrink-0">
+        <div className="px-4 sm:px-6 py-2.5 bg-[#FAF8F5] border-b border-[#E8E2D9] flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs text-stone-600 shrink-0">
           <div>
             <span className="text-stone-400 mr-1.5">Chapters:</span>
             <strong className="text-emerald-700">{configuredChaptersCount} of {chapters.length} Configured</strong>
@@ -413,7 +413,7 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
                                       </span>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                       {catTypes.map((t, tIdx) => (
                                         <div
                                           key={t.id || tIdx}
@@ -535,7 +535,7 @@ export default function QuestionTypeViewModal({ isOpen, onClose, questionType, o
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                             {catTypes.map((t, idx) => (
                               <div
                                 key={t.id || idx}

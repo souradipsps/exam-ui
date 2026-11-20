@@ -1867,24 +1867,19 @@ export default function TeacherManagement() {
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setViewingTeacher(null)}>
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-start justify-between px-6 py-4 border-b border-stone-200">
+              <div className="flex items-start justify-between px-6 py-5 bg-gradient-to-r from-[#72102A] to-[#3F0716]">
                 <div className="flex items-center gap-3">
                   <img src={t.avatar} alt={t.name} className="w-11 h-11 rounded-xl object-cover ring-2 ring-[#72102A]/20" />
                   <div>
-                    <h3 className="text-base font-bold text-[#1A1A1A]">{t.name}</h3>
-                    <p className="text-xs text-stone-500">{t.id}</p>
+                    <h3 className="text-xl font-extrabold text-white uppercase tracking-wide">{t.name}</h3>
+                    <p className="text-xs text-white/80">{t.id}</p>
                   </div>
                 </div>
-                <button type="button" onClick={() => setViewingTeacher(null)} className="text-stone-400 hover:text-stone-700 p-1">
-                  <Icon name="close" className="w-5 h-5" />
+                <button type="button" onClick={() => setViewingTeacher(null)} className="bg-white/90 hover:bg-white text-stone-600 rounded-lg p-2">
+                  <Icon name="close" className="w-4 h-4" />
                 </button>
               </div>
               <div className="px-6 py-4 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {stat('Assignments Received', assigned.length)}
-                  {stat('Question Type Edits', typeEdits)}
-                  {stat('Question Edits', questionEdits)}
-                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:divide-x md:divide-stone-200">
                 {renderLogs('Activity Logs - Question Type Assignment', logs.filter(log => log.action.includes('Question Type')), typeEdits, 'Question Type', assigned.filter(asn => asn.type === 'questionType'))}
                 <div className="md:pl-6">{renderLogs('Activity Logs - Question Data', logs.filter(log => !log.action.includes('Question Type')), questionEdits, 'Question', assigned.filter(asn => asn.type !== 'questionType'))}</div>

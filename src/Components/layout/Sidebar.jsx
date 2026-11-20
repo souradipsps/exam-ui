@@ -85,7 +85,7 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
                   onKeyDown={(e) => handleNavKeyDown && handleNavKeyDown(e, index)}
                   className={`w-full flex items-center text-[13px] transition-all text-left relative outline-none focus:outline-none ${
                     isActive
-                      ? 'font-bold text-white'
+                      ? 'font-bold text-white hover:bg-white/10'
                       : 'font-medium text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                   style={{

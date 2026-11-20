@@ -108,6 +108,56 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
           role="tablist"
           aria-label="Sidebar Navigation"
         >
+          {/* Section label + collapse toggle (desktop only) */}
+          <div className="hidden md:block relative" style={{ height: '34px', marginBottom: '8px' }}>
+            <span
+              className="absolute whitespace-nowrap uppercase"
+              style={{
+                left: '16px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                fontSize: '10.5px',
+                fontWeight: 700,
+                letterSpacing: '0.14em',
+                color: 'rgba(255,255,255,0.45)',
+                opacity: collapsed ? 0 : 1,
+                transition: 'opacity 0.2s ease',
+              }}
+            >
+              Menu
+            </span>
+            <button
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-expanded={!collapsed}
+              onMouseEnter={(e) => showTip(e, 'Expand sidebar')}
+              onMouseLeave={hideTip}
+              className="absolute top-0 flex items-center justify-center text-white hover:bg-white/20"
+              style={{
+                width: '44px',
+                height: '34px',
+                right: collapsed ? '1px' : '0px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(201, 168, 76, 0.5)',
+                transition: 'right 0.25s cubic-bezier(0.4,0,0.2,1), background-color 0.15s',
+              }}
+            >
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#D4B24C"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }}
+              >
+                <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" />
+              </svg>
+            </button>
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
             {NAV_ITEMS.map((item, index) => {
               const isActive = activeNav === item.id;
@@ -178,45 +228,6 @@ export default function Sidebar({ activeNav, setActiveNav, navButtonRefs, handle
             })}
           </div>
         </nav>
-
-        {/* Collapse / expand toggle (desktop only) */}
-        <div className="hidden md:block" style={{ padding: '0 10px 10px' }}>
-          <button
-            onClick={toggleCollapsed}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-expanded={!collapsed}
-            onMouseEnter={(e) => showTip(e, 'Expand sidebar')}
-            onMouseLeave={hideTip}
-            className="w-full flex items-center text-[12px] font-semibold text-white transition-colors hover:bg-white/20"
-            style={{
-              gap: '8px',
-              padding: '9px 0',
-              paddingLeft: '14px',
-              borderRadius: '10px',
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(201, 168, 76, 0.5)',
-            }}
-          >
-            <svg
-              className="w-5 h-5 flex-shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#D4B24C"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }}
-            >
-              <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" />
-            </svg>
-            <span
-              className="whitespace-nowrap overflow-hidden"
-              style={{ opacity: collapsed ? 0 : 1, transition: 'opacity 0.2s ease' }}
-            >
-              Collapse menu
-            </span>
-          </button>
-        </div>
 
         {/* User Footer */}
         <div

@@ -1815,7 +1815,6 @@ export default function TeacherManagement() {
         );
         const renderLogs = (title, list, edits, editLabel, assignedList) => (
           <div>
-            <p className="text-xs font-semibold text-[#1A1A1A] mb-2">Assigned To This Educator</p>
             {assignedList.length === 0 ? (
               <p className="text-xs text-stone-400 bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-3 mb-4">Nothing assigned yet</p>
             ) : (
@@ -1866,8 +1865,8 @@ export default function TeacherManagement() {
         );
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setViewingTeacher(null)}>
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-start justify-between px-6 py-5 bg-gradient-to-r from-[#72102A] to-[#3F0716]">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start justify-between flex-shrink-0 px-6 py-5 bg-gradient-to-r from-[#72102A] to-[#3F0716]">
                 <div className="flex items-center gap-3">
                   <img src={t.avatar} alt={t.name} className="w-11 h-11 rounded-xl object-cover ring-2 ring-[#72102A]/20" />
                   <div>
@@ -1879,11 +1878,25 @@ export default function TeacherManagement() {
                   <Icon name="close" className="w-4 h-4" />
                 </button>
               </div>
-              <div className="px-6 py-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:divide-x md:divide-stone-200">
-                {renderLogs('Activity Logs - Question Type Assignment', logs.filter(log => log.action.includes('Question Type')), typeEdits, 'Question Type', assigned.filter(asn => asn.type === 'questionType'))}
-                <div className="md:pl-6">{renderLogs('Activity Logs - Question Data', logs.filter(log => !log.action.includes('Question Type')), questionEdits, 'Question', assigned.filter(asn => asn.type !== 'questionType'))}</div>
-                </div>
+              <div className="px-6 py-4 space-y-4 overflow-y-auto">
+                <p className="text-xs font-semibold text-[#1A1A1A] text-center">Assigned To This Educator</p>
+                {(() => {
+                  const typeAssigned = assigned.filter(asn => asn.type === 'questionType');
+                  const dataAssigned = assigned.filter(asn => asn.type !== 'questionType');
+                  const typeSection = renderLogs('Activity Logs - Question Type Assignment', logs.filter(log => log.action.includes('Question Type')), typeEdits, 'Question Type', typeAssigned);
+                  const dataSection = renderLogs('Activity Logs - Question Data', logs.filter(log => !log.action.includes('Question Type')), questionEdits, 'Question', dataAssigned);
+                  if (typeAssigned.length && dataAssigned.length) {
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:divide-x md:divide-stone-200">
+                        {typeSection}
+                        <div className="md:pl-6">{dataSection}</div>
+                      </div>
+                    );
+                  }
+                  if (typeAssigned.length) return typeSection;
+                  if (dataAssigned.length) return dataSection;
+                  return <p className="text-xs text-stone-400 bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-3">Nothing assigned yet</p>;
+                })()}
               </div>
             </div>
           </div>

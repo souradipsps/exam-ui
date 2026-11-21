@@ -306,7 +306,7 @@ export default function TeacherManagement() {
     }, 3500);
   };
 
-  // Compute Exam Question Blueprint for the selected subject
+  // Compute Blueprint for the selected subject
   const currentBlueprint = useMemo(() => {
     return SUBJECT_BLUEPRINTS[selectedSubject] || DEFAULT_BLUEPRINT;
   }, [selectedSubject]);

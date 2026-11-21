@@ -5,8 +5,6 @@ import ComingSoonPlaceholder from '../Components/layout/ComingSoonPlaceholder.js
 import QuestionFilters from '../Components/question-bank/QuestionFilters.jsx';
 import Pagination from '../Components/question-bank/Pagination.jsx';
 import QuestionTable from '../Components/question-bank/QuestionTable.jsx';
-import QuestionCards from '../Components/question-bank/QuestionCards.jsx';
-import ViewToggle from '../Components/question-bank/ViewToggle.jsx';
 import QuestionDetailsModal from '../Components/modals/QuestionDetailsModal.jsx';
 import QuestionEditModal from '../Components/modals/QuestionEditModal.jsx';
 import QuestionHistoryModal from '../Components/modals/QuestionHistoryModal.jsx';
@@ -15,6 +13,8 @@ import Icon from '../Components/common/Icon.jsx';
 import { INITIAL_QUESTIONS } from '../data/mockQuestions.js';
 import { NAV_ITEMS } from '../data/navigation.js';
 import TeacherManagement from './TeacherManagement.jsx';
+import ExamBlueprint from './ExamBlueprint.jsx';
+import QuestionCreation from './QuestionCreation.jsx';
 
 export default function QuestionBank() {
   const [questions, setQuestions] = useState(INITIAL_QUESTIONS);
@@ -24,12 +24,45 @@ export default function QuestionBank() {
   const [filterChapter, setFilterChapter] = useState('All');
   const [filterType, setFilterType] = useState('All');
   const [filterMarks, setFilterMarks] = useState('All');
-  const [activeNav, setActiveNav] = useState('questionBank');
+  const [filterExam, setFilterExam] = useState('All');
+  const [filterSession, setFilterSession] = useState('All');
+  const [activeNav, setActiveNav] = useState(() => {
+    const validIds = new Set(NAV_ITEMS.map((item) => item.id));
+    try {
+      const hashId = window.location.hash.replace(/^#/, '');
+      if (hashId && validIds.has(hashId)) return hashId;
+      const saved = localStorage.getItem('sps_active_nav');
+      if (saved && validIds.has(saved)) return saved;
+    } catch {}
+    return 'questionBank';
+  });
+
+  // Persist active section across refreshes and sync with URL hash
+  useEffect(() => {
+    try {
+      localStorage.setItem('sps_active_nav', activeNav);
+      if (window.location.hash !== `#${activeNav}`) {
+        window.history.replaceState(null, '', `#${activeNav}`);
+      }
+    } catch {}
+  }, [activeNav]);
+
+  useEffect(() => {
+    const validIds = new Set(NAV_ITEMS.map((item) => item.id));
+    const onHashChange = () => {
+      const hashId = window.location.hash.replace(/^#/, '');
+      if (hashId && validIds.has(hashId)) {
+        setActiveNav(hashId);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [viewMode, setViewMode] = useState('list'); // 'list' | 'grid'
 
   const [modal, setModal] = useState(null); // 'details' | 'edit' | 'history' | 'delete'
   const [current, setCurrent] = useState(null);
@@ -120,15 +153,17 @@ export default function QuestionBank() {
         (filterSubject === 'All' || q.subject === filterSubject) &&
         (filterChapter === 'All' || q.chapter === filterChapter) &&
         (filterType === 'All' || q.type === filterType) &&
-        (filterMarks === 'All' || String(q.marks) === filterMarks)
+        (filterMarks === 'All' || String(q.marks) === filterMarks) &&
+        (filterExam === 'All' || q.exam === filterExam) &&
+        (filterSession === 'All' || q.session === filterSession)
       );
     });
-  }, [questions, searchTerm, filterClass, filterSubject, filterChapter, filterType, filterMarks]);
+  }, [questions, searchTerm, filterClass, filterSubject, filterChapter, filterType, filterMarks, filterExam, filterSession]);
 
   // Reset to first page when any search or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterClass, filterSubject, filterChapter, filterType, filterMarks]);
+  }, [searchTerm, filterClass, filterSubject, filterChapter, filterType, filterMarks, filterExam, filterSession]);
 
   // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -175,6 +210,8 @@ export default function QuestionBank() {
     setFilterChapter('All');
     setFilterType('All');
     setFilterMarks('All');
+    setFilterExam('All');
+    setFilterSession('All');
     setCurrentPage(1);
   };
 
@@ -329,28 +366,19 @@ export default function QuestionBank() {
                     setFilterType={setFilterType}
                     filterMarks={filterMarks}
                     setFilterMarks={setFilterMarks}
+                    filterExam={filterExam}
+                    setFilterExam={setFilterExam}
+                    filterSession={filterSession}
+                    setFilterSession={setFilterSession}
                   />
                 </div>
 
-                {/* View switcher */}
-                <div className="flex-shrink-0 flex justify-end">
-                  <ViewToggle view={viewMode} onChange={setViewMode} />
-                </div>
-
-                {/* Questions Display — list or card view */}
-                {viewMode === 'grid' ? (
-                  <QuestionCards
-                    questions={paginatedQuestions}
-                    onOpenModal={openModal}
-                    onOpenEdit={handleOpenEdit}
-                  />
-                ) : (
-                  <QuestionTable
-                    questions={paginatedQuestions}
-                    onOpenModal={openModal}
-                    onOpenEdit={handleOpenEdit}
-                  />
-                )}
+                {/* Questions Display — Table view */}
+                <QuestionTable
+                  questions={paginatedQuestions}
+                  onOpenModal={openModal}
+                  onOpenEdit={handleOpenEdit}
+                />
 
                 {/* Bottom Full-Featured Pagination Bar */}
                 {filtered.length > 0 && (
@@ -398,8 +426,16 @@ export default function QuestionBank() {
               </div>
             )}
 
+            {activeNav === 'examBlueprint' && <ExamBlueprint showToast={showToast} />}
+
+            {activeNav === 'questionCreation' && (
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                <QuestionCreation showToast={showToast} />
+              </div>
+            )}
+
             {/* ── COMING SOON VIEW FOR OTHER SECTIONS ── */}
-            {activeNav !== 'questionBank' && activeNav !== 'teacherManagement' && (
+            {activeNav !== 'questionBank' && activeNav !== 'teacherManagement' && activeNav !== 'examBlueprint' && activeNav !== 'questionCreation' && (
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <ComingSoonPlaceholder activeNav={activeNav} />
               </div>

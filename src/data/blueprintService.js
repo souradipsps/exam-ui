@@ -31,16 +31,25 @@ function academicContexts() {
   const map = new Map();
   INITIAL_QUESTIONS.forEach((q) => {
     const k = `${q.class}|${q.subject}`;
-    if (!map.has(k)) map.set(k, { id: `AC-${map.size + 1}`, className: q.class, subject: q.subject, chapters: new Set() });
+    if (!map.has(k)) map.set(k, { id: `AC-${map.size + 1}`, className: q.class, subject: q.subject, srcClass: q.class, srcSubject: q.subject, chapters: new Set() });
     map.get(k).chapters.add(q.chapter);
   });
-  return [...map.values()].map((c) => ({ ...c, chapters: [...c.chapters], name: `${c.className} — ${c.subject}` }));
+  return [...map.values()].map((c) => ({ ...c, chapters: [...c.chapters] }));
+}
+
+// Academic contexts are seeded from the Question Bank once, then are user-editable
+// (add / rename class, subject, chapter) and persisted. srcClass/srcSubject keep the link
+// to Question Bank questions after a rename.
+function loadAcademic() {
+  const db = read();
+  if (!db.academic) { db.academic = academicContexts(); write(db); }
+  return db.academic;
 }
 
 // Existing question types for a context, with availability + usual marks from the bank
 function existingTypes(contextId) {
-  const ctx = academicContexts().find((c) => c.id === contextId);
-  const pool = INITIAL_QUESTIONS.filter((q) => !ctx || (q.class === ctx.className && q.subject === ctx.subject));
+  const ctx = loadAcademic().find((c) => c.id === contextId);
+  const pool = INITIAL_QUESTIONS.filter((q) => ctx && q.class === ctx.srcClass && q.subject === ctx.srcSubject);
   const stats = new Map();
   pool.forEach((q) => {
     const s = stats.get(q.type) || { available: 0, marks: {} };
@@ -63,7 +72,8 @@ const write = (d) => { try { localStorage.setItem(KEY, JSON.stringify(d)); } cat
 
 export const blueprintService = {
   async getExams() { await delay(); return EXAMS; },
-  async getAcademicContexts() { await delay(); return academicContexts(); },
+  async getAcademicContexts() { await delay(); return loadAcademic(); },
+  async saveAcademicContexts(list) { const db = read(); db.academic = list; write(db); return list; },
   async getQuestionTypes(contextId) {
     await delay();
     return { existing: existingTypes(contextId), master: MASTER_TYPES };

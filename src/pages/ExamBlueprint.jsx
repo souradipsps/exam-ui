@@ -104,7 +104,7 @@ export default function ExamBlueprint({ showToast }) {
 
   if (view === 'create') {
     return <BlueprintWizard onCancel={() => setView('list')}
-      onSaved={async (bp) => { await load(); setView('list'); showToast(`✓ Blueprint "${bp.name}" created successfully.`); }} />;
+      onSaved={async (n) => { await load(); setView('list'); showToast(`✓ ${n} blueprint${n === 1 ? '' : 's'} created successfully.`); }} />;
   }
 
   const close = () => setModal(null);

@@ -8,7 +8,233 @@ import {
   QUESTION_BANK_ITEMS,
   INITIAL_ASSIGNMENTS,
   INITIAL_ACTIVITY_LOGS,
+  getSubjectBaseName,
+  getSubjectChapters,
 } from '../data/teacherData.js';
+
+// Black dropdown arrow (stays black even when the text is grey)
+const SELECT_ARROW = `url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2020'%3E%3Cpath%20fill='none'%20stroke='black'%20stroke-width='2'%20d='M5%207l5%205%205-5'/%3E%3C/svg%3E")`;
+
+// Multi-select dropdown (checkbox list) used for "Chapters"
+const ChaptersMultiSelect = ({ options, selected, onChange }) => {
+  const toggle = (opt) => onChange(selected.includes(opt) ? selected.filter(o => o !== opt) : [...selected, opt]);
+  const detailsRef = React.useRef(null);
+  // Close the list when the user clicks anywhere outside it
+  useEffect(() => {
+    const handleOutside = (e) => {  
+      if (detailsRef.current && !detailsRef.current.contains(e.target)) detailsRef.current.open = false;
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, []);
+  return (
+    <details ref={detailsRef} className="relative group">
+      <summary
+        className={`relative list-none w-full appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[length:1rem] bg-white border border-stone-300 rounded-md px-3 py-2 text-sm group-open:border-[#72102A] cursor-pointer truncate ${selected.length ? 'text-[#1A1A1A]' : 'text-stone-400'}`}
+        style={{ backgroundImage: SELECT_ARROW }}
+      >
+        {selected.length ? selected.join(', ') : 'Select chapters'}
+        <input required value={selected.length ? 'filled' : ''} onChange={() => {}} tabIndex={-1} aria-hidden="true" className="absolute inset-0 w-full h-full opacity-0 pointer-events-none" />
+      </summary>
+      <div className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-stone-300 rounded-md shadow-lg">
+        {options.length === 0 && <p className="px-3 py-2 text-sm text-stone-400">Select subject / course first</p>}
+        {options.map(opt => (
+          <label key={opt} className="flex items-center gap-2 px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F5E6EA] cursor-pointer">
+            <input type="checkbox" name="chapters" value={opt} checked={selected.includes(opt)} onChange={() => toggle(opt)} className="w-4 h-4 accent-[#72102A]" />
+            {opt}
+          </label>
+        ))}
+      </div>
+    </details>
+  );
+};
+
+// Single-select dropdown that always opens downward (used for "Class / Program")
+const ProgramSelect = ({ options, value, onChange }) => {
+  const detailsRef = React.useRef(null);
+  // Close the list when the user clicks anywhere outside it
+  useEffect(() => {
+    const handleOutside = (e) => {
+      if (detailsRef.current && !detailsRef.current.contains(e.target)) detailsRef.current.open = false;
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, []);
+  return (
+    <details ref={detailsRef} className="relative group">
+      <summary
+        className={`relative list-none w-full appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[length:1rem] bg-white border border-stone-300 rounded-md px-3 py-2 text-sm group-open:border-[#72102A] cursor-pointer truncate ${value ? 'text-[#1A1A1A]' : 'text-stone-400'}`}
+        style={{ backgroundImage: SELECT_ARROW }}
+      >
+        {value || 'Select class / program'}
+        <input required name="program" value={value} onChange={() => {}} tabIndex={-1} aria-hidden="true" className="absolute inset-0 w-full h-full opacity-0 pointer-events-none" />
+      </summary>
+      <div className="group/list absolute z-20 mt-0.5 w-full max-h-48 overflow-y-auto bg-white border border-stone-500">
+        <button
+          type="button"
+          onClick={() => { onChange({ target: { value: '' } }); detailsRef.current.open = false; }}
+          className={`block w-full text-left px-3 py-0.5 text-sm text-[#1A1A1A] hover:!bg-[#1A6ADB] hover:!text-white cursor-pointer ${!value ? 'bg-[#1A6ADB] text-white group-hover/list:bg-white group-hover/list:text-[#1A1A1A]' : ''}`}
+        >
+          Select class / program
+        </button>
+        {options.map(opt => (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => { onChange({ target: { value: opt } }); detailsRef.current.open = false; }}
+            className={`block w-full text-left px-3 py-0.5 text-sm text-[#1A1A1A] hover:!bg-[#1A6ADB] hover:!text-white cursor-pointer ${value === opt ? 'bg-[#1A6ADB] text-white group-hover/list:bg-white group-hover/list:text-[#1A1A1A]' : ''}`}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    </details>
+  );
+};
+
+// "Subject & Chapter Mapping" panel: one column per selected subject, chapter names shown on "See Chapters"
+const ChapterMapping = ({ subjects, gold, selectedChapters, onRemoveChapter }) => {
+  const [showChapters, setShowChapters] = useState(false);
+  // Chapters of a subject that are still selected (the X button removes one)
+  const chaptersOf = (sub) => getSubjectChapters(sub)
+    .map((name, idx) => ({ name, idx, key: `${getSubjectBaseName(sub)} - Chapter ${idx + 1} : ${name}` }))
+    .filter(c => selectedChapters.includes(c.key));
+  const t = gold
+    ? { panel: '#FDF8E8', panelBorder: 'rgba(201,168,76,0.5)', border: '#C9A84C', pillBg: 'rgba(201,168,76,0.25)', pillText: '#A68A3D' }
+    : { panel: '#F5E6EA', panelBorder: '#E6C4CD', border: '#72102A', pillBg: '#E6C4CD', pillText: '#72102A' };
+  const cols = { gridTemplateColumns: `repeat(${subjects.length}, minmax(150px, 1fr))` };
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: '#FFFFFF' }}>
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div>
+          <h4 className="text-base font-bold text-[#1A1A1A] leading-tight">Subject & Chapter Mapping</h4>
+          <p className="text-xs text-stone-600">Review the chapters mapped for each selected subject.</p>
+        </div>
+          <button
+            type="button"
+            onClick={() => setShowChapters(prev => !prev)}
+            className="inline-flex items-center justify-center gap-2 px-3 py-1 rounded-xl bg-[#72102A] hover:bg-[#8B1F3A] text-white shadow-md shadow-[#72102A]/20 border border-[#8B1F3A] transition-all text-xs font-bold whitespace-nowrap"
+          >
+            {showChapters ? 'Hide Chapters' : 'See Chapters'}
+            <svg className={`w-3 h-3 transition-transform ${showChapters ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+              <path d="M5 7l5 6 5-6H5z" />
+            </svg>
+          </button>
+      </div>
+      <div className="flex flex-col md:flex-row md:items-center gap-4 p-4">
+        <div className="flex-1 overflow-x-auto">
+          <div className="rounded-xl border border-stone-200 bg-white overflow-hidden min-w-max md:min-w-0">
+            <div className="grid" style={cols}>
+              {subjects.map((sub, i) => (
+                <div key={sub} className={`px-4 py-3 text-left bg-[#FAF8F5] ${i ? 'border-l border-stone-200' : ''}`}>
+                  <p className="text-[11px] font-semibold text-stone-600 uppercase tracking-wide">{getSubjectBaseName(sub)}</p>
+                  <span className="inline-block mt-1.5 text-xs font-bold px-3 py-0.5 rounded-full" style={{ backgroundColor: '#E6C4CD', color: '#72102A' }}>
+                    {chaptersOf(sub).length} Chapters
+                  </span>
+                </div>
+              ))}
+            </div>
+            {showChapters && (
+              <div className="grid border-t border-stone-200" style={cols}>
+                {subjects.map((sub, i) => (
+                  <div key={sub} className={`px-4 py-3 space-y-1.5 text-xs text-stone-600 ${i ? 'border-l border-stone-200' : ''}`}>
+                    {chaptersOf(sub).map(c => (
+                      <p key={c.key}>Chapter {c.idx + 1} : {c.name}</p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Multi-select dropdown styled like the Chapters list (used for "Subject / Course")
+const SubjectSelect = ({ options, selected, onChange }) => {
+  const toggle = (opt) => onChange(selected.includes(opt) ? selected.filter(o => o !== opt) : [...selected, opt]);
+  const detailsRef = React.useRef(null);
+  // Close the list when the user clicks anywhere outside it
+  useEffect(() => {
+    const handleOutside = (e) => {
+      if (detailsRef.current && !detailsRef.current.contains(e.target)) detailsRef.current.open = false;
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, []);
+  return (
+    <details ref={detailsRef} className="relative group">
+      <summary
+        className={`relative list-none w-full appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[length:1rem] bg-white border border-stone-300 rounded-md px-3 py-2 text-sm font-medium group-open:border-[#72102A] cursor-pointer truncate ${selected.length ? 'text-[#1A1A1A]' : 'text-stone-400'}`}
+        style={{ backgroundImage: SELECT_ARROW }}
+      >
+        {selected.length ? selected.join(', ') : 'Select subject / course'}
+        <input required name="subject" value={selected.join(', ')} onChange={() => {}} tabIndex={-1} aria-hidden="true" className="absolute inset-0 w-full h-full opacity-0 pointer-events-none" />
+      </summary>
+      <div className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-stone-300 rounded-md shadow-lg">
+        {options.length === 0 && <p className="px-3 py-2 text-sm text-stone-400">Select class / program first</p>}
+        {options.map(opt => (
+          <label key={opt} className="flex items-center gap-2 px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F5E6EA] cursor-pointer">
+            <input type="checkbox" value={opt} checked={selected.includes(opt)} onChange={() => toggle(opt)} className="w-4 h-4 accent-[#72102A]" />
+            {opt}
+          </label>
+        ))}
+      </div>
+    </details>
+  );
+};
+
+// ---- Dynamic Instructions & Guidelines ----
+const INSTRUCTION_KEYS = ['intro'];
+
+// Builds the auto-generated sentence (empty array = nothing selected yet)
+const buildInstructionItems = ({ kind, exam, session, program, subject, chapters, dueDate }) => {
+  const [y, m, d] = (dueDate || '').split('-');
+  const sentence = `Please send ${kind}${exam ? ` for the ${exam}` : ''}${session ? ` for the Session: ${session}` : ''}${program ? ` for the Class/Program: ${program}` : ''}${subject ? ' for your subjects' : ''}${dueDate ? ` by the Due Date: ${d}-${m}-${y}` : ''}`;
+  return {
+    intro: (exam || session || program || subject || chapters.length || dueDate) ? [sentence] : [],
+  };
+};
+
+// Finds the [start, end) line range of the auto-generated sentence inside the text
+const findInstructionBlock = (lines) => {
+  const start = lines.findIndex(l => l.startsWith('Please send '));
+  return start === -1 ? null : [start, start + 1];
+};
+
+// Updates only the auto-generated lines; every other line the user typed is left untouched.
+// A line the user deleted is not re-added; a line removed automatically (field cleared) comes back when the field is filled again.
+const syncInstructions = ({ text, removed }, fields) => {
+  const items = buildInstructionItems(fields);
+  const lines = text ? text.split('\n') : [];
+  const nextRemoved = [...removed];
+  INSTRUCTION_KEYS.forEach((key, idx) => {
+    const block = findInstructionBlock(lines);
+    const newLines = items[key];
+    if (block) {
+      lines.splice(block[0], block[1] - block[0], ...newLines);
+      if (!newLines.length && !nextRemoved.includes(key)) nextRemoved.push(key);
+    } else if (newLines.length && nextRemoved.includes(key)) {
+      let at = 0;
+      for (let i = idx - 1; i >= 0; i--) {
+        const prev = findInstructionBlock(lines);
+        if (prev) { at = prev[1]; break; }
+      }
+      lines.splice(at, 0, ...newLines);
+      nextRemoved.splice(nextRemoved.indexOf(key), 1);
+    }
+  });
+  return { text: lines.join('\n'), removed: nextRemoved, def: INSTRUCTION_KEYS.flatMap(k => items[k]).join('\n') };
+};
+
+// Current academic session (April to March), e.g. "2026-27"
+const getCurrentSession = () => {
+  const now = new Date();
+  const start = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  return `${start}-${String(start + 1).slice(-2)}`;
+};
 
 // Display helper: "Class 9" -> "IX"
 const toRomanClass = (cls) => {
@@ -25,8 +251,13 @@ const toRomanClass = (cls) => {
 // ==========================================
 export default function TeacherManagement() {
   const [teachers] = useState(INITIAL_TEACHERS);
+  const [viewingTeacher, setViewingTeacher] = useState(null);
   const [assignments, setAssignments] = useState(INITIAL_ASSIGNMENTS);
   const [activityLogs, setActivityLogs] = useState(INITIAL_ACTIVITY_LOGS);
+  const [selectedChapters, setSelectedChapters] = useState([]);
+  const [selectedDueDate, setSelectedDueDate] = useState('');
+  const instructionsRef = React.useRef(null);
+  const [instr, setInstr] = useState({ text: '', removed: INSTRUCTION_KEYS, def: '' });
   
   // Search & Active Tab State
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,9 +273,13 @@ export default function TeacherManagement() {
 
   // Form State for Program & Subject Selection (Question Type Assignment)
   const [selectedProgram, setSelectedProgram] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedSubjects, setSelectedSubjects] = useState([]);
+  // Subject / Course is multi-select; the rest of the form reads it as one joined string
+  const selectedSubject = selectedSubjects.join(', ');
+  const setSelectedSubject = (v) => setSelectedSubjects(Array.isArray(v) ? v : (v ? v.split(', ') : []));
   const [selectedExam, setSelectedExam] = useState("");
-  const [selectedSession, setSelectedSession] = useState("");
+  const [lastCreatedExam, setLastCreatedExam] = useState("");
+  const [selectedSession, setSelectedSession] = useState(getCurrentSession());
 
   // Form State for Question Types Assignment (Step 2A)
   const [selectedQuestionTypes, setSelectedQuestionTypes] = useState(['Multiple Choice (MCQ)', 'Essay']);
@@ -89,7 +324,7 @@ export default function TeacherManagement() {
     if (!selectedProgram || !selectedSubject) return [];
     const progLower = selectedProgram.toLowerCase();
 
-    return teachers.filter(t => {
+    const deptTeachers = teachers.filter(t => {
       const deptLower = t.department.toLowerCase();
       if (progLower.includes('computer science') || progLower.includes('technology')) {
         return deptLower.includes('computer') || deptLower.includes('technology');
@@ -108,6 +343,15 @@ export default function TeacherManagement() {
       }
       return true;
     });
+
+    // With several subjects selected, map every teacher who teaches any of them
+    const subjectTeachers = deptTeachers.filter(t => (t.subjects || []).some(ts =>
+      selectedSubject.split(', ').some(sel => {
+        const base = sel.replace(/\s*\(.*\)\s*$/, '').toLowerCase();
+        return base.includes(ts.toLowerCase()) || ts.toLowerCase().includes(base);
+      })
+    ));
+    return subjectTeachers.length ? subjectTeachers : deptTeachers;
   }, [teachers, selectedProgram, selectedSubject]);
 
   // Computed Teachers List for Picker Modal
@@ -133,15 +377,52 @@ export default function TeacherManagement() {
     }
   }, [mappedTeachers, selectedProgram, selectedSubject, editingAssignment, isAssignmentModalOpen]);
 
+  // Keep the generated instructions in sync with the form fields (manual edits are preserved)
+  useEffect(() => {
+    if (isAssignmentModalOpen && !editingAssignment) {
+      setInstr(prev => syncInstructions(prev, { kind: assignmentStep === 'questionTypeForm' ? 'Question Type Data' : 'Questions Data', exam: selectedExam, session: selectedSession, program: selectedProgram, subject: selectedSubject, chapters: selectedChapters, dueDate: selectedDueDate }));
+    }
+  }, [selectedExam, selectedSession, selectedProgram, selectedSubject, selectedChapters, selectedDueDate]);
+
+  // Chapters depend on the subject: pre-select all lesson-plan chapters when the subject changes
+  useEffect(() => {
+    setSelectedChapters(selectedSubjects.flatMap(sub => getSubjectChapters(sub).map((name, idx) => `${getSubjectBaseName(sub)} - Chapter ${idx + 1} : ${name}`)));
+  }, [selectedSubject]);
+
   // Start every new assignment form with the details empty
   useEffect(() => {
     if (isAssignmentModalOpen && !editingAssignment) {
-      setSelectedExam('');
-      setSelectedSession('');
+      setSelectedExam(lastCreatedExam);
+      setSelectedSession(getCurrentSession());
       setSelectedProgram('');
       setSelectedSubject('');
+      setSelectedChapters([]);
+      setSelectedDueDate('');
+      setInstr({ text: '', removed: INSTRUCTION_KEYS, def: '' });
+    } else if (isAssignmentModalOpen && editingAssignment) {
+      setInstr({ text: editingAssignment.instructions || '', removed: [], def: editingAssignment.instructions || '' });
     }
   }, [isAssignmentModalOpen, assignmentStep]);
+
+  // Grow the instructions box with its text (the Due Date box stretches to match it)
+  useEffect(() => {
+    const el = instructionsRef.current;
+    if (el) { el.style.minHeight = '0px'; el.style.height = 'auto'; el.style.minHeight = (el.scrollHeight + 2) + 'px'; }
+  }, [instr.text, assignmentStep]);
+
+  // True when the user changed the text away from the last auto-generated default
+  const isInstructionsEdited = instr.text !== instr.def;
+
+  // Regenerate the default instructions from the current selections
+  const handleResetInstructions = () => {
+    const fields = { kind: assignmentStep === 'questionTypeForm' ? 'Question Type Data' : 'Questions Data', exam: selectedExam, session: selectedSession, program: selectedProgram, subject: selectedSubject, chapters: selectedChapters, dueDate: selectedDueDate };
+    const items = buildInstructionItems(fields);
+    setInstr({
+      text: INSTRUCTION_KEYS.flatMap(k => items[k]).join('\n'),
+      removed: INSTRUCTION_KEYS.filter(k => !items[k].length),
+      def: INSTRUCTION_KEYS.flatMap(k => items[k]).join('\n'),
+    });
+  };
 
   // Handler when Program dropdown changes
   const handleProgramChange = (e) => {
@@ -414,6 +695,7 @@ export default function TeacherManagement() {
 
       setActivityLogs(prev => [newLog, ...prev]);
       setIsAssignmentModalOpen(false);
+      setLastCreatedExam(selectedExam);
       showToast(`Created Question Type assignment for ${subject}!`);
     }
   };
@@ -491,6 +773,7 @@ export default function TeacherManagement() {
 
       setActivityLogs(prev => [newLog, ...prev]);
       setIsAssignmentModalOpen(false);
+      setLastCreatedExam(selectedExam);
       showToast(`Assigned ${selectedQuestionIds.length} questions for ${subject} to ${teacher.name}!`);
     }
   };
@@ -520,7 +803,7 @@ export default function TeacherManagement() {
               <span className="p-1.5 rounded-lg bg-[#C9A84C]/25 text-[#FDF8E8]">
                 <Icon name="check" className="w-4 h-4" />
               </span>
-              <p className="text-sm font-medium">{toast.message}</p>
+              <p className="text-sm font-medium text-white">{toast.message}</p>
             </div>
             <button
               onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
@@ -725,13 +1008,15 @@ export default function TeacherManagement() {
                       </label>
                       <select
                         name="exam"
+                        required
                         value={selectedExam}
                         onChange={(e) => setSelectedExam(e.target.value)}
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                        className={`w-full appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[length:1rem] bg-white border border-stone-300 rounded-md px-3 py-2 text-sm ${selectedExam ? 'text-[#1A1A1A]' : 'text-stone-400'} focus:outline-none focus:border-[#72102A] cursor-pointer`}
+                        style={{ backgroundImage: SELECT_ARROW }}
                       >
                         <option value="">Select exam</option>
                         {['Term I Exam', 'Half-Yearly Exam', 'Term II Exam', 'Annual Exam'].map(ex => (
-                          <option key={ex} value={ex}>{ex}</option>
+                          <option key={ex} className="text-[#1A1A1A]" value={ex}>{ex}</option>
                         ))}
                       </select>
                     </div>
@@ -741,17 +1026,14 @@ export default function TeacherManagement() {
                       <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
                         2. Select Session
                       </label>
-                      <select
+                      <input
+                        type="text"
                         name="session"
+                        required
+                        readOnly
                         value={selectedSession}
-                        onChange={(e) => setSelectedSession(e.target.value)}
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
-                      >
-                        <option value="">Select session</option>
-                        {['2025-26', '2026-27', '2027-28'].map(ses => (
-                          <option key={ses} value={ses}>{ses}</option>
-                        ))}
-                      </select>
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none cursor-default"
+                      />
                     </div>
 
                     {/* 3. Select Class / Program */}
@@ -759,17 +1041,7 @@ export default function TeacherManagement() {
                       <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
                         3. Select Class / Program
                       </label>
-                      <select
-                        name="program"
-                        value={selectedProgram}
-                        onChange={handleProgramChange}
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
-                      >
-                        <option value="">Select class / program</option>
-                        {Object.keys(PROGRAM_SUBJECT_MAP).map(prog => (
-                          <option key={prog} value={prog}>{prog}</option>
-                        ))}
-                      </select>
+                      <ProgramSelect value={selectedProgram} onChange={handleProgramChange} options={Object.keys(PROGRAM_SUBJECT_MAP)} />
                     </div>
 
                     {/* 4. Select Subject / Course */}
@@ -777,17 +1049,17 @@ export default function TeacherManagement() {
                       <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
                         4. Select Subject / Course
                       </label>
-                      <select
-                        name="subject"
-                        value={selectedSubject}
-                        onChange={(e) => setSelectedSubject(e.target.value)}
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer font-medium"
-                      >
-                        <option value="">Select subject / course</option>
-                        {(PROGRAM_SUBJECT_MAP[selectedProgram] || []).map(sub => (
-                          <option key={sub} value={sub}>{sub}</option>
-                        ))}
-                      </select>
+                      <SubjectSelect selected={selectedSubjects} onChange={setSelectedSubjects} options={PROGRAM_SUBJECT_MAP[selectedProgram] || []} />
+                    </div>
+
+                    {/* 5. Chapters (pre-selected from the lesson plan) */}
+                    <div className="md:col-span-2 relative">
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-2">
+                        5. Chapters
+                      </label>
+                      <input required value={selectedChapters.length ? 'filled' : ''} onChange={() => {}} tabIndex={-1} aria-hidden="true" className="absolute left-0 bottom-0 w-full h-1 opacity-0 pointer-events-none" />
+                      {!selectedSubject && <p className="px-3 py-2 text-sm text-stone-400 border border-stone-300 rounded-md bg-white">Select subject / course first</p>}
+                      {selectedSubject && <ChapterMapping subjects={selectedSubjects} gold={false} selectedChapters={selectedChapters} onRemoveChapter={(key) => setSelectedChapters(prev => prev.filter(c => c !== key))} />}
                     </div>
                   </div>
 
@@ -830,9 +1102,9 @@ export default function TeacherManagement() {
                   {selectedProgram && selectedSubject && (
                   <div>
                     <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-2">
-                      5. Mapped Teachers
+                      7. Mapped Teachers
                     </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                       {mappedTeachers.map(teacher => {
                         const isSelected = selectedTeacherIds.includes(teacher.id);
                         return (
@@ -876,16 +1148,41 @@ export default function TeacherManagement() {
                   )}
 
                   {/* Instructions Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Due Date */}
+                    <div className="flex flex-col">
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        name="dueDate"
+                        required
+                        max="9999-12-31"
+                        onClick={(e) => { try { e.currentTarget.showPicker(); } catch (err) { /* picker not supported */ } }}
+                        value={selectedDueDate}
+                        onChange={(e) => { setSelectedDueDate(e.target.value); e.target.classList.toggle('text-stone-400', !e.target.value); e.target.classList.toggle('text-[#1A1A1A]', !!e.target.value); }}
+                        className="w-full flex-1 bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-stone-400 focus:outline-none focus:border-[#72102A] cursor-pointer"
+                      />
+                    </div>
+
                     {/* Instructions */}
-                    <div className="md:col-span-3">
-                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">Instructions & Guidelines</label>
+                    <div className="md:col-span-1 flex flex-col">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide">Instructions & Guidelines</label>
+                        {isInstructionsEdited && (
+                          <button type="button" onClick={handleResetInstructions} className="text-[11px] font-semibold text-[#72102A] hover:underline">Reset to Default</button>
+                        )}
+                      </div>
                       <textarea
                         name="instructions"
-                        rows="3"
-                        defaultValue={editingAssignment ? editingAssignment.instructions || "" : ""}
+                        ref={instructionsRef}
+                        required
+                        rows="1"
+                        value={instr.text}
+                        onChange={(e) => setInstr(prev => ({ ...prev, text: e.target.value }))}
                         placeholder="e.g. Prepare 10 MCQs and 5 Essay questions for the upcoming midterm exam..."
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] resize-none"
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] flex-1 resize-none overflow-hidden min-h-[38px]"
                       />
                     </div>
                   </div>
@@ -926,13 +1223,15 @@ export default function TeacherManagement() {
                       </label>
                       <select
                         name="exam"
+                        required
                         value={selectedExam}
                         onChange={(e) => setSelectedExam(e.target.value)}
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                        className={`w-full appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[length:1rem] bg-white border border-stone-300 rounded-md px-3 py-2 text-sm ${selectedExam ? 'text-[#1A1A1A]' : 'text-stone-400'} focus:outline-none focus:border-[#72102A] cursor-pointer`}
+                        style={{ backgroundImage: SELECT_ARROW }}
                       >
                         <option value="">Select exam</option>
                         {['Term I Exam', 'Half-Yearly Exam', 'Term II Exam', 'Annual Exam'].map(ex => (
-                          <option key={ex} value={ex}>{ex}</option>
+                          <option key={ex} className="text-[#1A1A1A]" value={ex}>{ex}</option>
                         ))}
                       </select>
                     </div>
@@ -942,17 +1241,14 @@ export default function TeacherManagement() {
                       <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
                         2. Select Session
                       </label>
-                      <select
+                      <input
+                        type="text"
                         name="session"
+                        required
+                        readOnly
                         value={selectedSession}
-                        onChange={(e) => setSelectedSession(e.target.value)}
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
-                      >
-                        <option value="">Select session</option>
-                        {['2025-26', '2026-27', '2027-28'].map(ses => (
-                          <option key={ses} value={ses}>{ses}</option>
-                        ))}
-                      </select>
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none cursor-default"
+                      />
                     </div>
 
                     {/* 3. Select Class / Program */}
@@ -960,17 +1256,7 @@ export default function TeacherManagement() {
                       <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
                         3. Select Class / Program
                       </label>
-                      <select
-                        name="program"
-                        value={selectedProgram}
-                        onChange={handleProgramChange}
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
-                      >
-                        <option value="">Select class / program</option>
-                        {Object.keys(PROGRAM_SUBJECT_MAP).map(prog => (
-                          <option key={prog} value={prog}>{prog}</option>
-                        ))}
-                      </select>
+                      <ProgramSelect value={selectedProgram} onChange={handleProgramChange} options={Object.keys(PROGRAM_SUBJECT_MAP)} />
                     </div>
 
                     {/* 2. Select Subject / Course */}
@@ -978,25 +1264,25 @@ export default function TeacherManagement() {
                       <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
                         4. Select Subject / Course
                       </label>
-                      <select
-                        name="subject"
-                        value={selectedSubject}
-                        onChange={(e) => setSelectedSubject(e.target.value)}
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer font-medium"
-                      >
-                        <option value="">Select subject / course</option>
-                        {(PROGRAM_SUBJECT_MAP[selectedProgram] || []).map(sub => (
-                          <option key={sub} value={sub}>{sub}</option>
-                        ))}
-                      </select>
+                      <SubjectSelect selected={selectedSubjects} onChange={setSelectedSubjects} options={PROGRAM_SUBJECT_MAP[selectedProgram] || []} />
+                    </div>
+
+                    {/* 5. Chapters (pre-selected from the lesson plan) */}
+                    <div className="md:col-span-2 relative">
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-2">
+                        5. Chapters
+                      </label>
+                      <input required value={selectedChapters.length ? 'filled' : ''} onChange={() => {}} tabIndex={-1} aria-hidden="true" className="absolute left-0 bottom-0 w-full h-1 opacity-0 pointer-events-none" />
+                      {!selectedSubject && <p className="px-3 py-2 text-sm text-stone-400 border border-stone-300 rounded-md bg-white">Select subject / course first</p>}
+                      {selectedSubject && <ChapterMapping subjects={selectedSubjects} gold={true} selectedChapters={selectedChapters} onRemoveChapter={(key) => setSelectedChapters(prev => prev.filter(c => c !== key))} />}
                     </div>
                   </div>
 
                   {/* 3. Select Teacher */}
                   {selectedProgram && selectedSubject && (
                   <div>
-                    <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-2">5. Mapped Teachers</label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-2">7. Mapped Teachers</label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                       {mappedTeachers.map(teacher => {
                         const isSelected = selectedTeacherIds.includes(teacher.id);
                         return (
@@ -1040,16 +1326,41 @@ export default function TeacherManagement() {
                   )}
 
                   {/* Instructions Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Due Date */}
+                    <div className="flex flex-col">
+                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        name="dueDate"
+                        required
+                        max="9999-12-31"
+                        onClick={(e) => { try { e.currentTarget.showPicker(); } catch (err) { /* picker not supported */ } }}
+                        value={selectedDueDate}
+                        onChange={(e) => { setSelectedDueDate(e.target.value); e.target.classList.toggle('text-stone-400', !e.target.value); e.target.classList.toggle('text-[#1A1A1A]', !!e.target.value); }}
+                        className="w-full flex-1 bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-stone-400 focus:outline-none focus:border-[#72102A] cursor-pointer"
+                      />
+                    </div>
+
                     {/* Instructions */}
-                    <div className="md:col-span-3">
-                      <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide mb-1.5">Instructions & Guidelines</label>
+                    <div className="md:col-span-1 flex flex-col">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-[11px] font-semibold text-stone-600 uppercase tracking-wide">Instructions & Guidelines</label>
+                        {isInstructionsEdited && (
+                          <button type="button" onClick={handleResetInstructions} className="text-[11px] font-semibold text-[#72102A] hover:underline">Reset to Default</button>
+                        )}
+                      </div>
                       <textarea
                         name="instructions"
-                        rows="3"
-                        defaultValue={editingAssignment ? editingAssignment.instructions || "" : ""}
+                        ref={instructionsRef}
+                        required
+                        rows="1"
+                        value={instr.text}
+                        onChange={(e) => setInstr(prev => ({ ...prev, text: e.target.value }))}
                         placeholder="e.g. Prepare 10 MCQs and 5 Essay questions for the upcoming midterm exam..."
-                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] resize-none"
+                        className="w-full bg-white border border-stone-300 rounded-md px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:border-[#72102A] flex-1 resize-none overflow-hidden min-h-[38px]"
                       />
                     </div>
                   </div>
@@ -1206,7 +1517,7 @@ export default function TeacherManagement() {
                     <div>
                       {/* Instructions Preview */}
                       {asn.instructions && (
-                        <div className="p-3 rounded-xl bg-[#FDF8E8] border border-[#C9A84C]/30 text-xs text-stone-700 italic">
+                        <div className="p-3 rounded-xl bg-[#FDF8E8] border border-[#C9A84C]/30 text-xs text-stone-700 italic whitespace-pre-line">
                           "{asn.instructions}"
                         </div>
                       )}
@@ -1230,25 +1541,11 @@ export default function TeacherManagement() {
       {activeTab === 'teachers' && !(isAssignmentModalOpen && (assignmentStep === 'questionTypeForm' || assignmentStep === 'questionForm')) && (
         <div className="space-y-6">
           {/* TEACHER LIST FILTER CONTROLS BAR */}
-          <div className="bg-white border border-stone-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="p-2.5 rounded-xl bg-[#F5E6EA] text-[#72102A] border border-[#E6C4CD]">
-                <Icon name="filter" className="w-5 h-5" />
-              </span>
-              <div>
-                <h3 className="text-sm font-bold text-[#1A1A1A] flex flex-col items-start gap-1">
-                  Filter Faculty Directory
-                  {(teacherDeptFilter !== 'All' || teacherDesignationFilter !== 'All' || teacherSubjectFilter !== 'All' || teacherClassFilter !== 'All' || teacherSectionFilter !== 'All') && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#72102A] text-white">
-                      Filtered ({filteredTeachers.length} shown)
-                    </span>
-                  )}
-                </h3>
-              </div>
-            </div>
+          <div className="bg-white border border-[#E8E2D9] rounded-[14px] p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center gap-3">
+            <span className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-[0.08em] mr-1">Filters</span>
 
           {/* SEARCH INPUT */}
-          <div className="relative w-full md:w-56 shrink-0 md:self-end">
+          <div className="relative w-full md:w-auto md:flex-1 md:min-w-[14rem]">
             <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
             <input
               type="text"
@@ -1256,12 +1553,12 @@ export default function TeacherManagement() {
                 activeTab === 'assignments'
                   ? "Search assignments by course, teacher, or type..."
                   : activeTab === 'teachers'
-                  ? "Educators/Department"
+                  ? "Educators or Departments"
                   : "Search activity logs..."
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl pl-10 pr-10 py-1.5 text-xs text-[#1A1A1A] placeholder-stone-400 focus:outline-none focus:border-[#72102A] focus:ring-1 focus:ring-[#72102A] transition-all"
+              className="w-full bg-[#FAFAF9] border-[1.5px] border-[#E8E2D9] rounded-[10px] pl-10 pr-10 py-2.5 text-[13px] text-[#1A1A1A] placeholder-stone-400 focus:outline-none focus:border-[#72102A] focus:bg-white focus:ring-[3px] focus:ring-[#72102A]/10 transition-all"
             />
             {searchTerm && (
               <button
@@ -1273,92 +1570,96 @@ export default function TeacherManagement() {
             )}
           </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 flex-1 max-w-4xl">
+            <div className="flex flex-wrap items-center gap-[6px]">
               {/* Department Filter */}
-              <div>
-                <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">Department</label>
+              <div className="flex items-center gap-[6px]">
                 <select
+                  title="Department"
                   value={teacherDeptFilter}
                   onChange={(e) => setTeacherDeptFilter(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                  className={`min-w-[90px] px-3 py-[5px] text-sm border-[1.5px] rounded-full focus:outline-none cursor-pointer transition-all ${teacherDeptFilter !== 'All' ? 'bg-[rgba(114,16,42,0.07)] border-[rgba(114,16,42,0.3)] text-[#72102A] font-bold' : 'bg-[#F9F9F8] border-[#E8E2D9] text-[#4B5563] font-medium'}`}
                 >
                   {uniqueDepartments.map(dept => (
-                    <option key={dept} value={dept}>{dept === 'All' ? 'All Departments' : dept}</option>
+                    <option key={dept} className="bg-white text-[#1A1A1A] font-normal" value={dept}>{dept === 'All' ? 'All Departments' : dept}</option>
                   ))}
                 </select>
               </div>
 
               {/* Designation Filter */}
-              <div>
-                <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">Designation</label>
+              <div className="flex items-center gap-[6px]">
+                <span className="text-[#D1D5DB] text-[11px] font-bold select-none px-px">›</span>
                 <select
+                  title="Designation"
                   value={teacherDesignationFilter}
                   onChange={(e) => setTeacherDesignationFilter(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                  className={`min-w-[90px] px-3 py-[5px] text-sm border-[1.5px] rounded-full focus:outline-none cursor-pointer transition-all ${teacherDesignationFilter !== 'All' ? 'bg-[rgba(114,16,42,0.07)] border-[rgba(114,16,42,0.3)] text-[#72102A] font-bold' : 'bg-[#F9F9F8] border-[#E8E2D9] text-[#4B5563] font-medium'}`}
                 >
                   {uniqueDesignations.map(desig => (
-                    <option key={desig} value={desig}>{desig === 'All' ? 'All Designations' : desig}</option>
+                    <option key={desig} className="bg-white text-[#1A1A1A] font-normal" value={desig}>{desig === 'All' ? 'All Designations' : desig}</option>
                   ))}
                 </select>
               </div>
 
               {/* Subject Filter */}
-              <div>
-                <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">Subject Taught</label>
+              <div className="flex items-center gap-[6px]">
+                <span className="text-[#D1D5DB] text-[11px] font-bold select-none px-px">›</span>
                 <select
+                  title="Subject/Course"
                   value={teacherSubjectFilter}
                   onChange={(e) => setTeacherSubjectFilter(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                  className={`min-w-[90px] px-3 py-[5px] text-sm border-[1.5px] rounded-full focus:outline-none cursor-pointer transition-all ${teacherSubjectFilter !== 'All' ? 'bg-[rgba(114,16,42,0.07)] border-[rgba(114,16,42,0.3)] text-[#72102A] font-bold' : 'bg-[#F9F9F8] border-[#E8E2D9] text-[#4B5563] font-medium'}`}
                 >
                   {uniqueTeacherSubjects.map(sub => (
-                    <option key={sub} value={sub}>{sub === 'All' ? 'All Subjects' : sub}</option>
+                    <option key={sub} className="bg-white text-[#1A1A1A] font-normal" value={sub}>{sub === 'All' ? 'Subject/Course' : sub}</option>
                   ))}
                 </select>
               </div>
 
               {/* Class Filter */}
-              <div>
-                <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">Class</label>
+              <div className="flex items-center gap-[6px]">
+                <span className="text-[#D1D5DB] text-[11px] font-bold select-none px-px">›</span>
                 <select
+                  title="Class/Program"
                   value={teacherClassFilter}
                   onChange={(e) => setTeacherClassFilter(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                  className={`min-w-[90px] px-3 py-[5px] text-sm border-[1.5px] rounded-full focus:outline-none cursor-pointer transition-all ${teacherClassFilter !== 'All' ? 'bg-[rgba(114,16,42,0.07)] border-[rgba(114,16,42,0.3)] text-[#72102A] font-bold' : 'bg-[#F9F9F8] border-[#E8E2D9] text-[#4B5563] font-medium'}`}
                 >
                   {uniqueTeacherClasses.map(cls => (
-                    <option key={cls} value={cls}>{cls === 'All' ? 'All Classes' : toRomanClass(cls)}</option>
+                    <option key={cls} className="bg-white text-[#1A1A1A] font-normal" value={cls}>{cls === 'All' ? 'Class/Program' : toRomanClass(cls)}</option>
                   ))}
                 </select>
               </div>
 
               {/* Section Filter */}
-              <div>
-                <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">Section</label>
+              <div className="flex items-center gap-[6px]">
+                <span className="text-[#D1D5DB] text-[11px] font-bold select-none px-px">›</span>
                 <select
+                  title="Section"
                   value={teacherSectionFilter}
                   onChange={(e) => setTeacherSectionFilter(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#72102A] cursor-pointer"
+                  className={`min-w-[90px] px-3 py-[5px] text-sm border-[1.5px] rounded-full focus:outline-none cursor-pointer transition-all ${teacherSectionFilter !== 'All' ? 'bg-[rgba(114,16,42,0.07)] border-[rgba(114,16,42,0.3)] text-[#72102A] font-bold' : 'bg-[#F9F9F8] border-[#E8E2D9] text-[#4B5563] font-medium'}`}
                 >
                   {uniqueTeacherSections.map(sec => (
-                    <option key={sec} value={sec}>{sec === 'All' ? 'All Sections' : sec}</option>
+                    <option key={sec} className="bg-white text-[#1A1A1A] font-normal" value={sec}>{sec === 'All' ? 'All Sections' : sec}</option>
                   ))}
                 </select>
               </div>
+              <button
+                onClick={() => {
+                  setTeacherDeptFilter('All');
+                  setTeacherDesignationFilter('All');
+                  setTeacherSubjectFilter('All');
+                  setTeacherClassFilter('All');
+                  setTeacherSectionFilter('All');
+                }}
+                className={`inline-flex items-center gap-[5px] px-3 py-[5px] ml-1 rounded-full bg-[rgba(114,16,42,0.06)] hover:bg-[rgba(114,16,42,0.12)] border-[1.5px] border-[rgba(114,16,42,0.2)] text-[#72102A] text-xs font-semibold transition-all shrink-0 focus:outline-none ${
+                  (teacherDeptFilter !== 'All' || teacherDesignationFilter !== 'All' || teacherSubjectFilter !== 'All' || teacherClassFilter !== 'All' || teacherSectionFilter !== 'All') ? '' : 'invisible'
+                }`}
+              >
+                <Icon name="close" className="w-3 h-3" />
+              Clear ({[teacherDeptFilter, teacherDesignationFilter, teacherSubjectFilter, teacherClassFilter, teacherSectionFilter].filter(f => f !== 'All').length})
+              </button>
             </div>
-
-            <button
-              onClick={() => {
-                setTeacherDeptFilter('All');
-                setTeacherDesignationFilter('All');
-                setTeacherSubjectFilter('All');
-                setTeacherClassFilter('All');
-                setTeacherSectionFilter('All');
-              }}
-              className={`px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-all shrink-0 self-end md:self-center focus:outline-none focus:ring-1 focus:ring-[#72102A] ${
-                (teacherDeptFilter !== 'All' || teacherDesignationFilter !== 'All' || teacherSubjectFilter !== 'All' || teacherClassFilter !== 'All' || teacherSectionFilter !== 'All') ? '' : 'invisible'
-              }`}
-            >
-              Clear Filters
-            </button>
           </div>
 
           {filteredTeachers.length === 0 ? (
@@ -1385,7 +1686,7 @@ export default function TeacherManagement() {
             {/* Mobile card view */}
             <div className="md:hidden space-y-4">
               {filteredTeachers.map(teacher => (
-                <div key={teacher.id} className="bg-white border border-stone-300 rounded-2xl shadow-sm p-4 space-y-3">
+                <div key={teacher.id} onClick={() => setViewingTeacher(teacher)} className="bg-white border border-stone-300 rounded-2xl shadow-sm p-4 space-y-3 cursor-pointer">
                   <div className="flex items-center gap-3">
                     <img
                       src={teacher.avatar}
@@ -1438,14 +1739,14 @@ export default function TeacherManagement() {
                     <th className="border border-stone-300 px-4 py-3">Designation</th>
                     <th className="border border-stone-300 px-4 py-3">Department</th>
                     <th className="border border-stone-300 px-4 py-3">Assigned Subjects</th>
-                    <th className="border border-stone-300 px-4 py-3">Assigned Classes</th>
+                    <th className="border border-stone-300 px-4 py-3">Assigned Classes/Program</th>
                     <th className="border border-stone-300 px-4 py-3">Assigned Sections</th>
                     <th className="border border-stone-300 px-4 py-3">Activity Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredTeachers.map(teacher => (
-                    <tr key={teacher.id} className="hover:bg-[#FDF5F7] transition-colors">
+                    <tr key={teacher.id} onClick={() => setViewingTeacher(teacher)} className="hover:bg-[#FDF5F7] transition-colors cursor-pointer">
                       <td className="border border-stone-300 px-4 py-3">
                         <div className="flex items-center gap-3">
                           <img
@@ -1498,6 +1799,109 @@ export default function TeacherManagement() {
           )}
         </div>
       )}
+
+      {/* EDUCATOR DETAILS POPUP */}
+      {viewingTeacher && (() => {
+        const t = viewingTeacher;
+        const logs = activityLogs.filter(log => (log.teacherName || '').includes(t.name));
+        const assigned = assignments.filter(asn => (asn.teacherIds || []).includes(t.id));
+        const typeEdits = logs.filter(log => log.action.startsWith('Updated Question Type')).length;
+        const questionEdits = logs.filter(log => log.action.startsWith('Updated Question Assignment')).length;
+        const stat = (label, value) => (
+          <div className="bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-2">
+            <p className="text-[11px] text-stone-500">{label}</p>
+            <p className="text-sm font-semibold text-[#1A1A1A]">{value}</p>
+          </div>
+        );
+        const renderLogs = (title, list, edits, editLabel, assignedList) => (
+          <div>
+            {assignedList.length === 0 ? (
+              <p className="text-xs text-stone-400 bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-3 mb-4">Nothing assigned yet</p>
+            ) : (
+              <div className="space-y-2 mb-4">
+                {assignedList.map(asn => (
+                  <div key={asn.id} className="bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-2.5">
+                    <p className="text-sm font-semibold text-[#1A1A1A]">{asn.type === 'questionType' ? 'Question Type Assignment' : 'Question Assignment'} &bull; {asn.subject}</p>
+                    <p className="text-xs text-stone-600 mt-0.5">{asn.program}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs font-semibold text-[#1A1A1A] mb-2">{title}</p>
+            {list.length === 0 ? (
+              <p className="text-xs text-stone-400 bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-3">No recent activity</p>
+            ) : (
+              <div className="relative pl-6">
+                <span className="absolute left-[5px] top-3 bottom-3 w-px bg-stone-300" />
+                <div className="space-y-3">
+                  {list.map(log => {
+                    const edited = log.action.startsWith('Updated');
+                    return (
+                      <div key={log.id} className="relative">
+                        <span className={`absolute -left-6 top-4 w-2.5 h-2.5 rounded-full ${edited ? 'bg-[#0B5E8E]' : 'bg-[#0B8F5B]'}`} />
+                        <div className="bg-[#F8F9FB] border border-stone-200 rounded-xl px-4 py-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md border ${edited ? 'bg-[#DBEAFE] text-[#1D4ED8] border-[#BFDBFE]' : 'bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]'}`}>{edited ? 'Edited' : log.action.startsWith('Created') ? 'Created' : 'Assigned'}</span>
+                            <p className="text-xs text-stone-500 whitespace-nowrap">{log.timestamp}</p>
+                          </div>
+                          <p className="text-sm text-[#1A1A1A] mt-2">{log.action}</p>
+                          <p className="text-sm text-stone-700 mt-0.5">{log.details}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="relative">
+                    <span className="absolute -left-6 top-4 w-2.5 h-2.5 rounded-full bg-[#7E22CE]" />
+                    <div className="bg-[#F8F9FB] border border-stone-200 rounded-xl px-4 py-3">
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-md border bg-[#F3E8FF] text-[#7E22CE] border-[#E9D5FF]">Edits</span>
+                      <p className="text-sm font-semibold text-[#1A1A1A] mt-2">Edited {edits} {edits === 1 ? 'time' : 'times'}</p>
+                      <p className="text-sm text-stone-700 mt-0.5">{editLabel} edited {edits}.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setViewingTeacher(null)}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start justify-between flex-shrink-0 px-6 py-5 bg-gradient-to-r from-[#72102A] to-[#3F0716]">
+                <div className="flex items-center gap-3">
+                  <img src={t.avatar} alt={t.name} className="w-11 h-11 rounded-xl object-cover ring-2 ring-[#72102A]/20" />
+                  <div>
+                    <h3 className="text-xl font-extrabold text-white uppercase tracking-wide">{t.name}</h3>
+                    <p className="text-xs text-white/80">{t.id}</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setViewingTeacher(null)} className="bg-white/90 hover:bg-white text-stone-600 rounded-lg p-2">
+                  <Icon name="close" className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="px-6 py-4 space-y-4 overflow-y-auto">
+                <p className="text-xs font-semibold text-[#1A1A1A] text-center">Assigned To This Educator</p>
+                {(() => {
+                  const typeAssigned = assigned.filter(asn => asn.type === 'questionType');
+                  const dataAssigned = assigned.filter(asn => asn.type !== 'questionType');
+                  const typeSection = renderLogs('Activity Logs - Question Type Assignment', logs.filter(log => log.action.includes('Question Type')), typeEdits, 'Question Type', typeAssigned);
+                  const dataSection = renderLogs('Activity Logs - Question Data', logs.filter(log => !log.action.includes('Question Type')), questionEdits, 'Question', dataAssigned);
+                  if (typeAssigned.length && dataAssigned.length) {
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:divide-x md:divide-stone-200">
+                        {typeSection}
+                        <div className="md:pl-6">{dataSection}</div>
+                      </div>
+                    );
+                  }
+                  if (typeAssigned.length) return typeSection;
+                  if (dataAssigned.length) return dataSection;
+                  return <p className="text-xs text-stone-400 bg-[#FAF8F5] border border-stone-200 rounded-lg px-3 py-3">Nothing assigned yet</p>;
+                })()}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ========================================== */}
       {/* TAB 3: ACTIVITY LOGS */}

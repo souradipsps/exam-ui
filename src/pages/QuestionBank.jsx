@@ -14,6 +14,7 @@ import { INITIAL_QUESTIONS } from '../data/mockQuestions.js';
 import { NAV_ITEMS } from '../data/navigation.js';
 import TeacherManagement from './TeacherManagement.jsx';
 import ExamBlueprint from './ExamBlueprint.jsx';
+import QuestionCreation from './QuestionCreation.jsx';
 
 export default function QuestionBank() {
   const [questions, setQuestions] = useState(INITIAL_QUESTIONS);
@@ -25,7 +26,39 @@ export default function QuestionBank() {
   const [filterMarks, setFilterMarks] = useState('All');
   const [filterExam, setFilterExam] = useState('All');
   const [filterSession, setFilterSession] = useState('All');
-  const [activeNav, setActiveNav] = useState('questionBank');
+  const [activeNav, setActiveNav] = useState(() => {
+    const validIds = new Set(NAV_ITEMS.map((item) => item.id));
+    try {
+      const hashId = window.location.hash.replace(/^#/, '');
+      if (hashId && validIds.has(hashId)) return hashId;
+      const saved = localStorage.getItem('sps_active_nav');
+      if (saved && validIds.has(saved)) return saved;
+    } catch {}
+    return 'questionBank';
+  });
+
+  // Persist active section across refreshes and sync with URL hash
+  useEffect(() => {
+    try {
+      localStorage.setItem('sps_active_nav', activeNav);
+      if (window.location.hash !== `#${activeNav}`) {
+        window.history.replaceState(null, '', `#${activeNav}`);
+      }
+    } catch {}
+  }, [activeNav]);
+
+  useEffect(() => {
+    const validIds = new Set(NAV_ITEMS.map((item) => item.id));
+    const onHashChange = () => {
+      const hashId = window.location.hash.replace(/^#/, '');
+      if (hashId && validIds.has(hashId)) {
+        setActiveNav(hashId);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -395,8 +428,14 @@ export default function QuestionBank() {
 
             {activeNav === 'examBlueprint' && <ExamBlueprint showToast={showToast} />}
 
+            {activeNav === 'questionCreation' && (
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                <QuestionCreation showToast={showToast} />
+              </div>
+            )}
+
             {/* ── COMING SOON VIEW FOR OTHER SECTIONS ── */}
-            {activeNav !== 'questionBank' && activeNav !== 'teacherManagement' && activeNav !== 'examBlueprint' && (
+            {activeNav !== 'questionBank' && activeNav !== 'teacherManagement' && activeNav !== 'examBlueprint' && activeNav !== 'questionCreation' && (
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <ComingSoonPlaceholder activeNav={activeNav} />
               </div>

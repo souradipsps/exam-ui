@@ -157,3 +157,45 @@ export function validateVariation(v, examMarks) {
   if (sum(v.difficulty) !== 100) errs.push(`Difficulty distribution must total 100% (now ${sum(v.difficulty)}%).`);
   return errs;
 }
+
+export const INITIAL_BLUEPRINTS = [
+  {
+    id: 'BP-DEFAULT',
+    name: 'Standard Examination Blueprint',
+    exam: { id: 'EX-002', name: 'Mid Term Examination', totalMarks: 50, duration: 120 },
+    context: { className: 'Class 10', subject: 'Physics' },
+    template: {
+      name: 'Standard Blueprint Template',
+      variations: [
+        {
+          label: 'Variation 1',
+          sections: [
+            { name: 'Section A', description: 'Objective' },
+            { name: 'Section B', description: 'Short Answer' },
+            { name: 'Section C', description: 'Long Essay' },
+          ],
+          rows: [
+            { name: 'Multiple Choice (MCQ)', source: 'master', section: 'Section A', count: 5, marks: 1 },
+            { name: 'Assertion & Reasoning', source: 'master', section: 'Section A', count: 2, marks: 1 },
+            { name: 'Short Answer', source: 'master', section: 'Section B', count: 6, marks: 3 },
+            { name: 'Long Essay / Problem', source: 'master', section: 'Section C', count: 5, marks: 5 },
+          ],
+          cognitive: { Remember: 20, Understand: 30, Apply: 30, Analyze: 15, Evaluate: 5, Create: 0 },
+          difficulty: { Easy: 40, Medium: 40, Hard: 20 },
+        },
+      ],
+    },
+  },
+];
+
+export function findBlueprintByContext({ examName, className, subjectName } = {}) {
+  const db = read();
+  const list = db.blueprints && db.blueprints.length > 0 ? db.blueprints : INITIAL_BLUEPRINTS;
+  const match = list.find((b) => {
+    const examMatch = !examName || b.exam?.name === examName;
+    const classMatch = !className || b.context?.className === className;
+    const subjectMatch = !subjectName || b.context?.subject === subjectName;
+    return examMatch && classMatch && subjectMatch;
+  });
+  return match || list[0] || null;
+}

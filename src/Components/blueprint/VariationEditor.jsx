@@ -82,7 +82,7 @@ export default function VariationEditor({ value: v, onChange, types, examMarks }
 
   return (
     <div className="flex flex-col gap-3">
-      <Section title="1. Question Distribution" hint="Summary of what this variation currently distributes.">
+      <Section title="1. Question Distribution" hint="Summary of what this template currently distributes.">
         <div className="grid grid-cols-3 gap-3 text-center">
           {[['Sections', v.sections.length], ['Questions', totals.questions],
             ['Marks', `${totals.marks}${examMarks ? ` / ${examMarks}` : ''}`]].map(([l, n]) => (
@@ -177,22 +177,34 @@ export default function VariationEditor({ value: v, onChange, types, examMarks }
   );
 }
 
-/** Tabbed list of variations with add (+) / remove. */
-export function VariationTabs({ variations, active, setActive, onAdd, onRemove }) {
+/** Read-only view of a template's configuration (used to preview a selected template). */
+export function TemplatePreview({ v }) {
+  const t = variationTotals(v);
+  const pct = (o) => Object.entries(o).filter(([, n]) => n).map(([k, n]) => `${k} ${n}%`).join(', ') || '—';
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-3">
-      {variations.map((v, i) => (
-        <div key={i} className={`flex items-center rounded-lg border text-xs font-semibold ${i === active ? 'text-white border-transparent' : 'text-gray-600 border-[#E8E2D9] bg-white'}`}
-          style={i === active ? { backgroundColor: '#72102a' } : undefined}>
-          <button type="button" className="px-3 py-1.5" onClick={() => setActive(i)}>{v.label}</button>
-          {variations.length > 1 && (
-            <button type="button" className="pr-2 opacity-70 hover:opacity-100" aria-label={`Remove ${v.label}`} onClick={() => onRemove(i)}>×</button>
-          )}
-        </div>
-      ))}
-      <button type="button" onClick={onAdd} className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-dashed border-[#72102a] flex items-center gap-1" style={{ color: '#72102a' }}>
-        <Icon name="plus" className="w-3.5 h-3.5" /> Add Blueprint Template Variation
-      </button>
+    <div className="mt-3 border border-[#E8E2D9] rounded-xl bg-[#faf8f5] p-4">
+      <div className="grid grid-cols-3 gap-3 text-center mb-3">
+        {[['Sections', v.sections.length], ['Questions', t.questions], ['Marks', t.marks]].map(([l, n]) => (
+          <div key={l} className="bg-white rounded-lg py-2">
+            <div className="text-lg font-extrabold" style={{ color: '#72102a' }}>{n}</div>
+            <div className="text-[11px] text-gray-500">{l}</div>
+          </div>
+        ))}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs min-w-[420px]">
+          <thead><tr className="text-left text-gray-500 border-b border-[#E8E2D9]"><th className="py-1">Type</th><th>Section</th><th>Qs</th><th>Marks each</th><th>Total</th></tr></thead>
+          <tbody>
+            {v.rows.map((r) => (
+              <tr key={r.name} className="border-b border-[#E8E2D9]/60"><td className="py-1.5 font-semibold">{r.name}</td><td>{r.section}</td><td>{r.count}</td><td>{r.marks}</td><td>{r.count * r.marks}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">
+        <b>Cognitive:</b> {pct(v.cognitive)}<br />
+        <b>Difficulty:</b> {pct(v.difficulty)}
+      </p>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(sed 's/\\\\r//')"
+      "Bash(sed 's/\\\\r//')",
+      "Bash(npx vite *)"
     ]
   }
 }

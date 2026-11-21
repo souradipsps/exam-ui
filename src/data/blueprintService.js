@@ -9,14 +9,16 @@ const KEY = 'examui.blueprints.v1';
 const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
 const uid = (p) => `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`.toUpperCase();
 
+export const SESSIONS = ['2024-25', '2025-26', '2026-27'];
+export const blueprintLabel = (examName, session) => `${examName} · ${session}`;
 export const COGNITIVE_LEVELS = ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'];
 export const DIFFICULTY_LEVELS = ['Easy', 'Medium', 'Hard'];
 
 const EXAMS = [
-  { id: 'EX-001', name: 'Unit Test 1', type: 'Unit Test', totalMarks: 25, duration: 60, term: 'Term 1' },
-  { id: 'EX-002', name: 'Mid Term Examination', type: 'Mid Term', totalMarks: 50, duration: 120, term: 'Term 1' },
-  { id: 'EX-003', name: 'Half Yearly Examination', type: 'Half Yearly', totalMarks: 80, duration: 180, term: 'Term 2' },
-  { id: 'EX-004', name: 'Final Examination', type: 'Final', totalMarks: 100, duration: 180, term: 'Term 3' },
+  { id: 'EX-001', name: 'Unit Test 1', totalMarks: 25, duration: 60, session: '2025-26' },
+  { id: 'EX-002', name: 'Mid Term Examination', totalMarks: 50, duration: 120, session: '2025-26' },
+  { id: 'EX-003', name: 'Half Yearly Examination', totalMarks: 80, duration: 180, session: '2025-26' },
+  { id: 'EX-004', name: 'Final Examination', totalMarks: 100, duration: 180, session: '2025-26' },
 ];
 
 // Master question types (system catalogue)
@@ -29,16 +31,25 @@ function academicContexts() {
   const map = new Map();
   INITIAL_QUESTIONS.forEach((q) => {
     const k = `${q.class}|${q.subject}`;
-    if (!map.has(k)) map.set(k, { id: `AC-${map.size + 1}`, className: q.class, subject: q.subject, chapters: new Set() });
+    if (!map.has(k)) map.set(k, { id: `AC-${map.size + 1}`, className: q.class, subject: q.subject, srcClass: q.class, srcSubject: q.subject, chapters: new Set() });
     map.get(k).chapters.add(q.chapter);
   });
-  return [...map.values()].map((c) => ({ ...c, chapters: [...c.chapters], name: `${c.className} — ${c.subject}` }));
+  return [...map.values()].map((c) => ({ ...c, chapters: [...c.chapters] }));
+}
+
+// Academic contexts are seeded from the Question Bank once, then are user-editable
+// (add / rename class, subject, chapter) and persisted. srcClass/srcSubject keep the link
+// to Question Bank questions after a rename.
+function loadAcademic() {
+  const db = read();
+  if (!db.academic) { db.academic = academicContexts(); write(db); }
+  return db.academic;
 }
 
 // Existing question types for a context, with availability + usual marks from the bank
 function existingTypes(contextId) {
-  const ctx = academicContexts().find((c) => c.id === contextId);
-  const pool = INITIAL_QUESTIONS.filter((q) => !ctx || (q.class === ctx.className && q.subject === ctx.subject));
+  const ctx = loadAcademic().find((c) => c.id === contextId);
+  const pool = INITIAL_QUESTIONS.filter((q) => ctx && q.class === ctx.srcClass && q.subject === ctx.srcSubject);
   const stats = new Map();
   pool.forEach((q) => {
     const s = stats.get(q.type) || { available: 0, marks: {} };
@@ -61,7 +72,8 @@ const write = (d) => { try { localStorage.setItem(KEY, JSON.stringify(d)); } cat
 
 export const blueprintService = {
   async getExams() { await delay(); return EXAMS; },
-  async getAcademicContexts() { await delay(); return academicContexts(); },
+  async getAcademicContexts() { await delay(); return loadAcademic(); },
+  async saveAcademicContexts(list) { const db = read(); db.academic = list; write(db); return list; },
   async getQuestionTypes(contextId) {
     await delay();
     return { existing: existingTypes(contextId), master: MASTER_TYPES };
@@ -70,7 +82,7 @@ export const blueprintService = {
   async listTemplates() { await delay(250); return read().templates; },
 
   // Creates the template (if new) and the blueprint together so the relationship stays consistent.
-  async createBlueprint({ name, exam, context, template, templateId }) {
+  async createBlueprint({ session, exam, context, template, templateId }) {
     await delay(500);
     const db = read();
     let tid = templateId;
@@ -80,8 +92,8 @@ export const blueprintService = {
     }
     const tpl = db.templates.find((t) => t.id === tid);
     const bp = {
-      id: uid('BP'), name, templateId: tid, templateName: tpl.name,
-      exam: { id: exam.id, name: exam.name, totalMarks: exam.totalMarks, duration: exam.duration },
+      id: uid('BP'), session, name: blueprintLabel(exam.name, session), templateId: tid, templateName: tpl.name,
+      exam: { id: exam.id, name: exam.name, totalMarks: exam.totalMarks, duration: exam.duration, session: exam.session },
       context: { id: context.id, className: context.className, subject: context.subject, chapters: context.chapters },
       createdAt: new Date().toISOString(),
     };
@@ -90,12 +102,13 @@ export const blueprintService = {
     return bp;
   },
   // Edit blueprint metadata and its template's variations
-  async updateBlueprint(id, { name, variations }) {
+  async updateBlueprint(id, { session, variations }) {
     await delay(400);
     const db = read();
     const bp = db.blueprints.find((b) => b.id === id);
     if (!bp) throw new Error('Blueprint not found');
-    bp.name = name;
+    bp.session = session;
+    bp.name = blueprintLabel(bp.exam.name, session);
     const tpl = db.templates.find((t) => t.id === bp.templateId);
     if (tpl && variations) tpl.variations = variations;
     write(db);

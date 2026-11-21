@@ -1,7 +1,7 @@
 export const NAV_ITEMS = [
   { id: 'questionBank',         label: 'Question Bank',             icon: 'book' },
   { id: 'teacherManagement',    label: 'Educator Management',       icon: 'users' },
-  { id: 'examBlueprint',        label: 'Exam Question Blueprint',   icon: 'clipboard' },
+  { id: 'examBlueprint',        label: 'Blueprint',                  icon: 'clipboard' },
   { id: 'questionCreation',     label: 'Question Creation',         icon: 'plus' },
   { id: 'generatePaper',        label: 'Generate Question Paper',   icon: 'refresh' },
   { id: 'paperManagement',      label: 'Question Paper Management', icon: 'grid' },
